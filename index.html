@@ -2,9 +2,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Zakupy"><meta name="theme-color" content="#FFF9F4">
-<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.png"><title>Zakupy</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+<title>Zakupy</title>
 <style>
-:root{--bg:#FFF9F4;--card:#fff;--ink:#2E2A47;--mut:#7B7694;--line:#EEE4F3;--pri:#CDB9FF;--fab:#FFB5CC;--vio:#6B4FD8;--peach:#FFB78F;--mint:#B5EAD7;--rose:#FFB5CC;--r:18px;--serif:ui-serif,"New York",Georgia,"Times New Roman",serif;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif}
+:root{--bg:#FFF9F4;--card:#fff;--ink:#2E2A47;--mut:#7B7694;--line:#EEE4F3;--pri:#CDB9FF;--fab:#FFB5CC;--vio:#6B4FD8;--peach:#FFB78F;--mint:#B5EAD7;--rose:#FFB5CC;--r:18px;--serif:"Quicksand",sans-serif;--sans:"Nunito",sans-serif;}
 @media(prefers-color-scheme:dark){:root{--bg:#1E1A2E;--card:#2A2540;--ink:#F4EFFF;--mut:#A69FC4;--line:#3A3458;--vio:#C5B3FF}}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 var(--sans)}
 body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(90px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
@@ -21,7 +26,7 @@ h2{margin:20px 12px 8px}.pill{display:inline-flex;align-items:center;gap:7px;pad
 .acts{flex:none;display:flex;gap:4px}.ib{width:40px;height:40px;border-radius:20px;border:0;background:var(--line);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}.ib.del{color:#D63A5C}
 .t{flex:1;min-width:0}.t b{display:block;font-weight:700}.t small{color:var(--mut);display:block}.p .t b{text-decoration:line-through;color:var(--mut)}
 .nu{font-size:13px;font-weight:600;color:var(--vio)}
-.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:62px;height:62px;border-radius:31px;border:0;background:var(--fab);color:#2E2A47;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(46,42,71,.2)}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:62px;height:62px;border-radius:31px;border:0;background:var(--fab);color:#2E2A47;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(255,181,204,.45)}
 .gear{margin-left:auto;background:var(--card);border:2px solid var(--line);border-radius:22px;min-width:44px;min-height:44px;color:var(--ink);display:flex;align-items:center;justify-content:center}
 .sheet{position:fixed;inset:0;background:rgba(46,42,71,.45);z-index:9;display:flex;align-items:flex-end}
 .sheet>div{background:var(--bg);width:100%;max-height:92%;overflow:auto;border-radius:28px 28px 0 0;padding:18px 14px calc(16px + env(safe-area-inset-bottom))}
