@@ -2,6 +2,7 @@
 const $ = s => document.querySelector(s), col = new Intl.Collator('pl', { sensitivity: 'base' });
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const vibrate = () => { if (navigator.vibrate) navigator.vibrate(15); };
 const ICONS = { cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>', leaf: '<path d="M5 19c0-9 6-14 14-14 0 9-5 14-14 14zM5 19l8-8"/>', bottle: '<path d="M9 3h6v3l1.5 2v11a2 2 0 01-2 2h-5a2 2 0 01-2-2V8L9 6zM8 12h8"/>',
   yarn: '<circle cx="12" cy="12" r="8"/><path d="M5 9c5 2 9 2 14 0M5 15c5-2 9-2 14 0M12 4c-3 5-3 11 0 16"/>', pencil: '<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>', bag: '<path d="M6 8h12l1 12H5zM9 8a3 3 0 016 0"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>', home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>', gift: '<path d="M4 11h16v9H4zM3 8h18v3H3zM12 8v12M12 8c-3 0-4-4-1-4 2 0 1 4 1 4zM12 8c3 0 4-4 1-4-2 0-1 4-1 4z"/>',
@@ -80,7 +81,13 @@ function render() {
   $('#tabs').innerHTML = `<button class="chip ${view === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-v="all">${ic('cart', 18)} Wszystko</button>` + S.types.map(t => `<button class="chip ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${ic(t.icon, 18)} ${esc(t.name)}</button>`).join('');
   $('#filt').innerHTML = [...ST, 'all'].map(f => `<button class="chip f ${filter === f ? 'on' : ''}" style="--c:${FC[f]};--on:${onC(FC[f])}" data-f="${f}">${f === 'all' ? 'Wszystkie' : STL[f]}</button>`).join('');
   
-  let list = S.entries.filter(e => e.sessionId === S.cur && (view === 'all' || e.typeId === view) && (filter === 'all' || e.status === filter));
+  let list = S.entries.filter(e => {
+    if (e.sessionId !== S.cur) return false;
+    if (view !== 'all' && e.typeId !== view) return false;
+    if (filter === 'all') return e.status !== 'bought'; // "Wszystkie" statusy pokazuje aktywne (do kupienia + niedostępne)
+    return e.status === filter;
+  });
+
   if (query) {
     const qLower = query.toLowerCase();
     list = list.filter(e => prod(e.productId).name.toLowerCase().includes(qLower));
@@ -107,6 +114,7 @@ function render() {
 document.addEventListener('click', e => { 
   const b = e.target.closest('[data-v],[data-f],[data-s],[data-e],[data-d],[data-plus],[data-minus]'); 
   if (!b) return; const d = b.dataset;
+  vibrate();
   if (d.v) { view = d.v; render(); } 
   else if (d.f) { filter = d.f; render(); }
   else if (d.s) { const en = S.entries.find(x => x.id === d.s); en.status = ST[(ST.indexOf(en.status) + 1) % 3]; save(); } 
@@ -125,8 +133,8 @@ document.addEventListener('click', e => {
 
 $('#q').oninput = e => { query = e.target.value.trim(); render(); };
 $('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
-$('#add').onclick = () => entryForm(null); 
-$('#cfg').onclick = settings; 
+$('#add').onclick = () => { vibrate(); entryForm(null); }; 
+$('#cfg').onclick = () => { vibrate(); settings(); }; 
 $('#cfg').innerHTML = ic('sliders', 24); 
 $('#add').innerHTML = ic('plus', 30);
 
@@ -177,7 +185,7 @@ function entryForm(id) {
     const updateSug = () => {
       const recents = S.products.filter(x => x.typeId === typeId).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
       $('#sug').innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
-      $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; updateSug(); if (pp.nutri) draw(); });
+      $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; updateSug(); if (pp.nutri) draw(); });
     };
 
     const autoFill = name => { 
@@ -200,16 +208,17 @@ function entryForm(id) {
         updateSug();
       } else {
         $('#sug').innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)} · ${esc(catName(t, x.catId))}</button>`).join(''); 
-        $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; $('#sug').innerHTML = ''; if (pp.nutri) draw(); }); 
+        $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; $('#sug').innerHTML = ''; if (pp.nutri) draw(); }); 
       }
     };
 
     if (!en) updateSug();
 
-    $('#cl').onclick = () => modal('');
-    if (en) $('#rm').onclick = () => { if (confirm('Usunąć pozycję z listy? Produkt pozostanie w bazie.')) { S.entries = S.entries.filter(x => x.id !== en.id); modal(''); save(); } };
+    $('#cl').onclick = () => { vibrate(); modal(''); };
+    if (en) $('#rm').onclick = () => { vibrate(); if (confirm('Usunąć pozycję z listy? Produkt pozostanie w bazie.')) { S.entries = S.entries.filter(x => x.id !== en.id); modal(''); save(); } };
     
     $('#ok').onclick = () => { 
+      vibrate();
       const name = $('#fN').value.trim(), qty = num($('#fQ').value);
       if (!name) return $('#err').textContent = 'Podaj nazwę produktu.'; 
       if (!(qty > 0)) return $('#err').textContent = 'Ilość musi być większa od zera.';
@@ -239,11 +248,12 @@ function settings() {
   <label class="btn s" style="display:flex;align-items:center;justify-content:center">Przywróć z kopii<input id="imp" type="file" accept=".json,application/json" hidden></label>
   <p style="color:var(--mut);font-size:14px">Dane są tylko na tym urządzeniu — nie ma synchronizacji. Zarchiwizowane sesje zakupów: ${hist}. Rób kopię regularnie.</p><button class="btn s" id="cl">Zamknij</button>`);
   
-  $('#cl').onclick = () => modal(''); 
-  $('#types').onclick = typesEditor; 
-  $('#end').onclick = endSession;
+  $('#cl').onclick = () => { vibrate(); modal(''); }; 
+  $('#types').onclick = () => { vibrate(); typesEditor(); }; 
+  $('#end').onclick = () => { vibrate(); endSession(); };
   
   $('#share').onclick = async () => {
+    vibrate();
     const list = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy');
     if (!list.length) { alert('Brak produktów do kupienia na obecnej liście!'); return; }
     const groups = {};
@@ -260,8 +270,8 @@ function settings() {
     }
   };
 
-  $('#exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'zakupy-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
-  $('#imp').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); if (!d.types || !d.products || !d.entries || !d.sessions) throw 0;
+  $('#exp').onclick = () => { vibrate(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'zakupy-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
+  $('#imp').onchange = async e => { vibrate(); try { const d = JSON.parse(await e.target.files[0].text()); if (!d.types || !d.products || !d.entries || !d.sessions) throw 0;
     if (!confirm('Przywrócenie ZASTĄPI wszystkie obecne dane. Kontynuować?')) return; S = mig(d); view = 'all'; modal(''); save(); } catch { alert('To nie jest poprawna kopia zapasowa.'); } };
 }
 
@@ -271,16 +281,22 @@ function endSession() {
   <label><input type="checkbox" id="cn" checked style="width:auto;min-height:0"> Przenieś niedostępne do nowej listy</label>
   <label><input type="checkbox" id="cb" checked style="width:auto;min-height:0"> Przenieś też „do kupienia”</label>
   <button class="btn" id="go">Zarchiwizuj i utwórz nową</button><button class="btn s" id="cl">Anuluj</button>`);
-  $('#cl').onclick = () => modal(''); $('#go').onclick = () => { const n = { id: uid(), name: 'Zakupy ' + new Date().toLocaleDateString('pl'), created: Date.now(), archived: false }, cn = $('#cn').checked, cb = $('#cb').checked;
+  $('#cl').onclick = () => { vibrate(); modal(''); }; 
+  $('#go').onclick = () => { 
+    vibrate();
+    const n = { id: uid(), name: 'Zakupy ' + new Date().toLocaleDateString('pl'), created: Date.now(), archived: false }, cn = $('#cn').checked, cb = $('#cb').checked;
     const carry = S.entries.filter(e => e.sessionId === S.cur && ((cn && e.status === 'na') || (cb && e.status === 'buy')));
     carry.forEach(e => { if (!S.entries.some(x => x.sessionId === n.id && x.productId === e.productId)) S.entries.push({ ...e, id: uid(), sessionId: n.id, status: 'buy' }); });
-    S.sessions.find(s => s.id === S.cur).archived = true; S.sessions.push(n); S.cur = n.id; modal(''); save(); };
+    S.sessions.find(s => s.id === S.cur).archived = true; S.sessions.push(n); S.cur = n.id; modal(''); save(); 
+  };
 }
 
 function typesEditor() {
   modal(`<h3 style="margin:0">Rodzaje list</h3>` + S.types.map(t => `<div class="item" style="margin:6px 0"><div class="t"><b>${ic(t.icon, 18)} ${esc(t.name)}</b><small>${t.categories.length} kategorii</small></div><button class="chip f" data-et="${t.id}">Edytuj</button></div>`).join('') +
     `<button class="btn" id="nt">Nowy rodzaj listy</button><button class="btn s" id="cl">Wróć</button>`);
-  $('#cl').onclick = settings; $('#nt').onclick = () => editType(null); document.querySelectorAll('[data-et]').forEach(b => b.onclick = () => editType(b.dataset.et));
+  $('#cl').onclick = () => { vibrate(); settings(); }; 
+  $('#nt').onclick = () => { vibrate(); editType(null); }; 
+  document.querySelectorAll('[data-et]').forEach(b => b.onclick = () => { vibrate(); editType(b.dataset.et); });
 }
 
 function editType(id) {
@@ -289,15 +305,21 @@ function editType(id) {
   <label><input type="checkbox" id="tf" ${t.food ? 'checked' : ''} style="width:auto;min-height:0"> Produkty spożywcze (wartości odżywcze)</label>
   <label>Kategorie (jedna w wierszu; zmiana nazwy zachowuje produkty)</label><textarea id="tk" rows="8">${esc(t.categories.map(c => c.name).join('\n'))}</textarea><div class="err" id="err"></div>
   <button class="btn" id="ok">Zapisz</button>${id ? '<button class="btn d" id="del">Usuń listę</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
-  $('#cl').onclick = typesEditor;
-  $('#ok').onclick = () => { const name = $('#tn').value.trim(); if (!name) return $('#err').textContent = 'Podaj nazwę listy.';
+  $('#cl').onclick = () => { vibrate(); typesEditor(); };
+  $('#ok').onclick = () => { 
+    vibrate();
+    const name = $('#tn').value.trim(); if (!name) return $('#err').textContent = 'Podaj nazwę listy.';
     const names = $('#tk').value.split('\n').map(x => x.trim()).filter(Boolean), old = id ? t.categories : [];
     const cats = names.map((n, i) => ({ id: old[i]?.id || uid(), name: n }));
     if (id) { const gone = old.slice(cats.length); if (gone.some(c => S.products.some(p => p.catId === c.id)) && !confirm('Usuwane kategorie mają produkty — trafią do „Bez kategorii”. Kontynuować?')) return; gone.forEach(c => S.products.forEach(p => { if (p.catId === c.id) p.catId = null; })); }
-    Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc').value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); };
-  if (id) $('#del').onclick = () => { const n = S.entries.filter(e => e.typeId === id).length, pn = S.products.filter(p => p.typeId === id).length;
+    Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc').value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); 
+  };
+  if (id) $('#del').onclick = () => { 
+    vibrate();
+    const n = S.entries.filter(e => e.typeId === id).length, pn = S.products.filter(p => p.typeId === id).length;
     if (!confirm(`Usunąć listę „${t.name}”? Zostanie ${pn} produktów i ${n} pozycji na listach — zostaną usunięte razem z nią (w tym dane odżywcze). Zrób najpierw kopię zapasową.`)) return;
-    S.types = S.types.filter(x => x.id !== id); S.products = S.products.filter(p => p.typeId !== id); S.entries = S.entries.filter(e => e.typeId !== id); if (view === id) view = 'all'; save().then(typesEditor); };
+    S.types = S.types.filter(x => x.id !== id); S.products = S.products.filter(p => p.typeId !== id); S.entries = S.entries.filter(e => e.typeId !== id); if (view === id) view = 'all'; save().then(typesEditor); 
+  };
 }
 
 (async () => { 
