@@ -28,7 +28,11 @@
     ['papier toaletow|pasta do zebow|szczoteczk|mydlo|dezodorant|chusteczk', 'Higiena'], ['szampon|odzywk', 'Włosy'], ['krem do twarzy|serum|tonik', 'Pielęgnacja twarzy'],
     ['balsam|krem do rak|krem do ciala', 'Pielęgnacja ciała'], ['plaster|witamin|tabletk', 'Zdrowie'],
     ['dlugopis|olowek|marker|pisak|zakreslacz', 'Długopisy i ołówki'], ['zeszyt|notes|kalendarz', 'Zeszyty i notesy'], ['teczk|segregator', 'Teczki i segregatory'],
-    ['wloczk|kordonek|nici|igl', 'Włóczki i nici'], ['farb|pedzel|akwarel', 'Farby i pędzle'], ['papier|karton|bibul', 'Papier i karton'], ['klej|nozyczk|tasma', 'Kleje i narzędzia']
+    ['wloczk|kordonek|nici|igl', 'Włóczki i nici'], ['farb|pedzel|akwarel', 'Farby i pędzle'], ['papier|karton|bibul', 'Papier i karton'], ['klej|nozyczk|tasma', 'Kleje i narzędzia'],
+    // Dodane słowa kluczowe dla nowej kategorii "Inne"
+    ['koszul|spodni|bluzk|skarpet|bielizn|kurtk|but', 'Ubrania'],
+    ['poduszk|koc|posciel|swiec|wazon|ramk|wieszak', 'Rzeczy do domu'],
+    ['baterii|zapalniczk|brelok|latark', 'Drobiazgi']
   ];
   const norm = s => s.toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   // Zwraca {cat, n:{basis,values}|null} albo null, gdy tabela NIE zna produktu (wtedy aplikacja niczego nie zgaduje).
