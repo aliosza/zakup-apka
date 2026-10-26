@@ -77,15 +77,37 @@ function entryForm(id) {
     <label>Kategoria</label><select id="fC">${opts(t.categories.map(c => [c.id, c.name]), p?.catId)}</select>
     <div class="g2"><div><label>Ilość</label><input id="fQ" inputmode="decimal" value="${en ? en.qty : 1}"></div><div><label>Jednostka</label><select id="fU">${opts(UNITS.map(u => [u, u]), en?.unit || (food ? 'szt' : 'szt'))}</select></div></div>
     <label>Notatka (opcjonalnie)</label><input id="fNote" value="${esc(en?.note || '')}">
-    ${food ? `<label>Wartości odżywcze (opcjonalnie)</label><div class="g2"><div><label>Wartości na 100</label><select id="nB">${opts([['g', 'g'], ['ml', 'ml']], p?.nutri?.basis)}</select></div><div><label>Energia (kcal)</label><input id="nK" inputmode="decimal" placeholder="kcal" value="${p?.nutri?.values.kcal ?? ''}"></div></div>
+    ${food ? `
+<label>
+<input type="checkbox" id="showNut" style="width:auto;min-height:0">
+ Dodaj wartości odżywcze
+</label>
+` : ''}
+   ${food ? `<div id="nutBox" style="display:none">
+<label>Wartości odżywcze (opcjonalnie)</label><div class="g2"><div><label>Wartości na 100</label><select id="nB">${opts([['g', 'g'], ['ml', 'ml']], p?.nutri?.basis)}</select></div><div><label>Energia (kcal)</label><input id="nK" inputmode="decimal" placeholder="kcal" value="${p?.nutri?.values.kcal ?? ''}"></div></div>
     <div class="g2" style="margin-top:8px"><div><label>Białko (g)</label><input id="nP" inputmode="decimal" placeholder="białko (g)" value="${p?.nutri?.values.protein ?? ''}"></div><div><label>Tłuszcze (g)</label><input id="nT" inputmode="decimal" placeholder="tłuszcze (g)" value="${p?.nutri?.values.fat ?? ''}"></div></div>
     <div class="g2" style="margin-top:8px"><div><label>Węglowodany (g)</label><input id="nW" inputmode="decimal" placeholder="węglowodany (g)" value="${p?.nutri?.values.carbs ?? ''}"></div><div><label>Błonnik (g)</label><input id="nF" inputmode="decimal" placeholder="błonnik (g)" value="${p?.nutri?.values.fibre ?? ''}"></div></div><div id="live" class="nu" style="margin-top:6px"></div><div id="auto" class="nu" style="font-style:italic"></div>
-    <small style="color:var(--mut)">Puste pole = nieznane (nie zero).</small>` : ''}
+    <small style="color:var(--mut)">Puste pole = nieznane (nie zero).</small></div>` : ''}
     <label>Status</label><select id="fS">${opts(ST.map(s => [s, STL[s]]), en?.status || 'buy')}</select>
     <button class="btn" id="ok">Zapisz</button>${en ? '<button class="btn s" id="rm">Usuń z listy</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
     const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
     const nut = () => { if (!food) return null; const v = { kcal: num($('#nK').value), protein: num($('#nP').value), fat: num($('#nT').value), carbs: num($('#nW').value), fibre: num($('#nF').value) }; if (Object.values(v).every(x => x == null)) return null; return { basis: $('#nB').value, values: { ...(p?.nutri?.values || {}), ...v } }; };
-    const live = () => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Razem: ' + nutriText(r) : 'Brak przelicznika dla tej jednostki'; };
+    const live = () if (food) {
+  const cb = $('#showNut');
+  const box = $('#nutBox');
+
+  if (cb && box) {
+    const hasNutri = !!p?.nutri;
+
+    cb.checked = hasNutri;
+    box.style.display = hasNutri ? 'block' : 'none';
+
+    cb.onchange = () => {
+      box.style.display = cb.checked ? 'block' : 'none';
+    };
+  }
+}
+      => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Razem: ' + nutriText(r) : 'Brak przelicznika dla tej jednostki'; };
     if (food) ['#nB', '#nK', '#nP', '#nT', '#nW', '#nF'].forEach(s => $(s).oninput = () => { nutTouched = true; autoNut = false; $('#auto').textContent = ''; live(); }), ['#fQ', '#fU'].forEach(s => $(s).oninput = live), live();
     $('#fT').onchange = e => { typeId = e.target.value; pid = null; catTouched = nutTouched = autoNut = false; draw(); };
     $('#fC').onchange = () => catTouched = true;
