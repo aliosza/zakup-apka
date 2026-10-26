@@ -17,14 +17,16 @@ header{position:sticky;top:0;background:var(--bg);z-index:5;padding:10px 12px 8p
 .row{display:flex;gap:8px;align-items:center}.scroll{display:flex;gap:8px;overflow-x:auto;padding:6px 0;scrollbar-width:none}
 .ttl{font-family:var(--serif);font-size:30px;font-weight:700;letter-spacing:-.01em}h3{font-family:var(--serif);font-size:22px;font-weight:700}svg{flex:none;display:block}
 
-button, .chip, .btn, .fab, .gear, .ib, .st {
-  transition: transform 0.1s ease, opacity 0.1s ease, box-shadow 0.1s ease;
+/* Płynne, sprężyste animacje kliknięcia dla przycisków i elementów interaktywnych */
+button, .chip, .btn, .fab, .gear, .ib, .st, .qty-btn {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, background-color 0.15s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
-button:active, .chip:active, .btn:active, .fab:active, .gear:active, .ib:active, .st:active {
-  transform: scale(0.93);
-  opacity: 0.85;
+button:active, .chip:active, .btn:active, .fab:active, .gear:active, .ib:active, .st:active, .qty-btn:active {
+  transform: scale(0.92) translateY(1px);
+  opacity: 0.8;
 }
 
 .chip{flex:none;min-height:44px;padding:0 16px;border-radius:22px;border:2px solid var(--c,var(--line));background:var(--card);color:var(--on,var(--ink));font-family:var(--serif);font-weight:600;font-size:16px;display:flex;align-items:center;gap:7px}
