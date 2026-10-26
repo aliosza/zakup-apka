@@ -18,27 +18,21 @@ const OLDC = { '#2f7d4f': '#B5EAD7', '#2b6cb0': '#B7DEF8', '#a0306b': '#D4C1FF',
 
 function mig(s) { 
   s.types.forEach(t => { t.color = OLDC[t.color] || t.color; t.icon = EMO[t.icon] || (ICONS[t.icon] ? t.icon : 'bag'); }); 
-  
   const hobby = s.types.find(t => t.name === 'Hobby i rękodzieło');
   const pap = s.types.find(t => t.name === 'Papiernicze');
-  
   if (hobby && pap) {
     hobby.name = 'Hobby i papiernicze';
     const existingCats = new Set(hobby.categories.map(c => c.name));
-    pap.categories.forEach(c => {
-      if (!existingCats.has(c.name)) hobby.categories.push(c);
-    });
+    pap.categories.forEach(c => { if (!existingCats.has(c.name)) hobby.categories.push(c); });
     s.products.forEach(p => { if (p.typeId === pap.id) p.typeId = hobby.id; });
     s.entries.forEach(e => { if (e.typeId === pap.id) e.typeId = hobby.id; });
     s.types = s.types.filter(t => t.id !== pap.id);
   } else if (hobby && !pap && hobby.name === 'Hobby i rękodzieło') {
     hobby.name = 'Hobby i papiernicze';
   }
-
   if (!s.types.some(t => t.name === 'Inne')) {
     s.types.push(mk('Inne', '#FFCFAE', 'bag', false, ['Ubrania', 'Rzeczy do domu', 'Drobiazgi', 'Różne']));
   }
-
   return s; 
 }
 
@@ -58,25 +52,17 @@ const DB = { open: () => new Promise((ok, no) => { const r = indexedDB.open('zak
   async get() { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction('kv').objectStore('kv').get('state'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
   async put(v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'state'); t.oncomplete = ok; t.onerror = () => no(t.error); }); } };
 
-let S, view = 'all', filter = 'buy', query = '';
+let S, view = 'all', filter = 'buy', query = '', sortMode = 'alpha';
 
 async function save() { 
-  try { 
-    await DB.put(JSON.parse(JSON.stringify(S))); 
-  } catch (e) { 
-    console.error('Błąd zapisu do IndexedDB:', e);
-    alert('Nie udało się zapisać danych: ' + e.message); 
-  } 
+  try { await DB.put(JSON.parse(JSON.stringify(S))); } catch (e) { console.error(e); alert('Nie udało się zapisać danych: ' + e.message); } 
   render(); 
 }
 
 const type = id => S.types.find(t => t.id === id), prod = id => S.products.find(p => p.id === id);
 const catName = (t, id) => (t?.categories.find(c => c.id === id)?.name) || 'Bez kategorii';
 function modal(html) { $('#modal').innerHTML = html ? `<div class="sheet" id="sh"><div>${html}</div></div>` : ''; const sh = $('#sh'); if (sh) sh.onclick = e => { if (e.target === sh) modal(''); }; }
-
-// Pomocnik formatujący liczby zmiennoprzecinkowe (unikamy niedokładności js i zamieniamy kropkę na przecinek)
 const fmt = n => n == null ? '?' : String(Math.round(n * 100) / 100).replace('.', ',');
-
 const nutriText = r => `${fmt(r.kcal)}\u00A0kcal · B\u00A0${fmt(r.protein)}\u00A0g · T\u00A0${fmt(r.fat)}\u00A0g · W\u00A0${fmt(r.carbs)}\u00A0g · bł.\u00A0${fmt(r.fibre)}\u00A0g`;
 
 function totalsBar(list) {
@@ -95,8 +81,6 @@ function render() {
   $('#filt').innerHTML = [...ST, 'all'].map(f => `<button class="chip f ${filter === f ? 'on' : ''}" style="--c:${FC[f]};--on:${onC(FC[f])}" data-f="${f}">${f === 'all' ? 'Wszystkie' : STL[f]}</button>`).join('');
   
   let list = S.entries.filter(e => e.sessionId === S.cur && (view === 'all' || e.typeId === view) && (filter === 'all' || e.status === filter));
-  
-  // Optymalizacja i wyczyszczenie warunku wyszukiwania
   if (query) {
     const qLower = query.toLowerCase();
     list = list.filter(e => prod(e.productId).name.toLowerCase().includes(qLower));
@@ -108,18 +92,43 @@ function render() {
   list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = view === 'all' ? t.name + ' › ' + catName(t, p.catId) : catName(t, p.catId); (groups[key] ||= { t, items: [] }).items.push(e); });
   
   $('#main').innerHTML = totalsBar(list) + Object.keys(groups).sort(col.compare).map(k => `<h2><span class="pill" style="--c:${groups[k].t.color};--on:${onC(groups[k].t.color)}">${ic(groups[k].t.icon, 16)}${esc(k)}</span></h2>` +
-    groups[k].items.sort((a, b) => col.compare(prod(a.productId).name, prod(b.productId).name)).map(e => `<div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color}">
+    groups[k].items.sort((a, b) => {
+      if (sortMode === 'alpha') return col.compare(prod(a.productId).name, prod(b.productId).name);
+      return (a.added || 0) - (b.added || 0);
+    }).map(e => `<div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color}">
     <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
-    <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div><div class="acts"><button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button><button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button></div></div>`).join('')).join('');
+    <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div>
+    <div class="acts">
+      <div class="qty-ctrls"><button class="qty-btn" data-minus="${e.id}">-</button><button class="qty-btn" data-plus="${e.id}">+</button></div>
+      <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button><button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
+    </div></div>`).join('')).join('');
 }
 
-document.addEventListener('click', e => { const b = e.target.closest('[data-v],[data-f],[data-s],[data-e],[data-d]'); if (!b) return; const d = b.dataset;
-  if (d.v) { view = d.v; render(); } else if (d.f) { filter = d.f; render(); }
-  else if (d.s) { const en = S.entries.find(x => x.id === d.s); en.status = ST[(ST.indexOf(en.status) + 1) % 3]; save(); } else if (d.e) entryForm(d.e);
-  else if (d.d) { const en = S.entries.find(x => x.id === d.d), nm = prod(en.productId).name; if (confirm(`Usunąć „${nm}” z listy? Produkt pozostanie w bazie, więc łatwo dodasz go ponownie.`)) { S.entries = S.entries.filter(x => x.id !== d.d); save(); } } });
+document.addEventListener('click', e => { 
+  const b = e.target.closest('[data-v],[data-f],[data-s],[data-e],[data-d],[data-plus],[data-minus]'); 
+  if (!b) return; const d = b.dataset;
+  if (d.v) { view = d.v; render(); } 
+  else if (d.f) { filter = d.f; render(); }
+  else if (d.s) { const en = S.entries.find(x => x.id === d.s); en.status = ST[(ST.indexOf(en.status) + 1) % 3]; save(); } 
+  else if (d.e) entryForm(d.e);
+  else if (d.plus || d.minus) {
+    const id = d.plus || d.minus;
+    const en = S.entries.find(x => x.id === id);
+    if (en) {
+      const step = en.unit === 'g' || en.unit === 'ml' ? 100 : (en.unit === 'kg' || en.unit === 'l' ? 0.5 : 1);
+      en.qty = Math.max(0.1, Math.round((en.qty + (d.plus ? step : -step)) * 100) / 100);
+      save();
+    }
+  }
+  else if (d.d) { const en = S.entries.find(x => x.id === d.d), nm = prod(en.productId).name; if (confirm(`Usunąć „${nm}” z listy? Produkt pozostanie w bazie, więc łatwo dodasz go ponownie.`)) { S.entries = S.entries.filter(x => x.id !== d.d); save(); } } 
+});
 
 $('#q').oninput = e => { query = e.target.value.trim(); render(); };
-$('#add').onclick = () => entryForm(null); $('#cfg').onclick = settings; $('#cfg').innerHTML = ic('sliders', 24); $('#add').innerHTML = ic('plus', 30);
+$('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
+$('#add').onclick = () => entryForm(null); 
+$('#cfg').onclick = settings; 
+$('#cfg').innerHTML = ic('sliders', 24); 
+$('#add').innerHTML = ic('plus', 30);
 
 const opts = (arr, sel) => arr.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
 
@@ -145,58 +154,112 @@ function entryForm(id) {
     <small style="color:var(--mut)">Puste pole = nieznane (nie zero).</small></div>` : ''}
     <label>Status</label><select id="fS">${opts(ST.map(s => [s, STL[s]]), en?.status || 'buy')}</select>
     <button class="btn" id="ok">Zapisz</button>${en ? '<button class="btn s" id="rm">Usuń z listy</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
+    
     const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
     const nut = () => { if (!food) return null; const v = { kcal: num($('#nK').value), protein: num($('#nP').value), fat: num($('#nT').value), carbs: num($('#nW').value), fibre: num($('#nF').value) }; if (Object.values(v).every(x => x == null)) return null; return { basis: $('#nB').value, values: { ...(p?.nutri?.values || {}), ...v } }; };
     const live = () => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Razem: ' + nutriText(r) : 'Brak przelicznika dla tej jednostki'; };
-                      if (food) {
-  const cb = $('#showNut');
-  const box = $('#nutBox');
-
-  if (cb && box) {
-    const hasNutri = !!p?.nutri;
-
-    cb.checked = hasNutri;
-    box.style.display = hasNutri ? 'block' : 'none';
-
-    cb.onchange = () => {
-      box.style.display = cb.checked ? 'block' : 'none';
-    };
-  }
-}
+    
+    if (food) {
+      const cb = $('#showNut');
+      const box = $('#nutBox');
+      if (cb && box) {
+        const hasNutri = !!p?.nutri;
+        cb.checked = hasNutri;
+        box.style.display = hasNutri ? 'block' : 'none';
+        cb.onchange = () => { box.style.display = cb.checked ? 'block' : 'none'; };
+      }
+    }
+    
     if (food) ['#nB', '#nK', '#nP', '#nT', '#nW', '#nF'].forEach(s => $(s).oninput = () => { nutTouched = true; autoNut = false; $('#auto').textContent = ''; live(); }), ['#fQ', '#fU'].forEach(s => $(s).oninput = live), live();
     $('#fT').onchange = e => { typeId = e.target.value; pid = null; catTouched = nutTouched = autoNut = false; draw(); };
     $('#fC').onchange = () => catTouched = true;
-    const autoFill = name => { const nm = name.trim(), sp = nm && S.products.find(x => x.typeId === typeId && Foods.norm(x.name) === Foods.norm(nm));
+    
+    const updateSug = () => {
+      const recents = S.products.filter(x => x.typeId === typeId).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
+      $('#sug').innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+      $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; updateSug(); if (pp.nutri) draw(); });
+    };
+
+    const autoFill = name => { 
+      const nm = name.trim(), sp = nm && S.products.find(x => x.typeId === typeId && Foods.norm(x.name) === Foods.norm(nm));
       const f = nm && Foods.find(nm, t.categories.map(c => c.name)), fCat = f && t.categories.find(c => c.name === f.cat)?.id;
       const catId = sp?.catId || fCat, n = sp?.nutri || f?.n;
       if (!catTouched && catId && t.categories.some(c => c.id === catId)) $('#fC').value = catId;
       if (!food) return; const set = (id, v) => $(id).value = v ?? '';
       if (n && !nutTouched) { const v = n.values; $('#nB').value = n.basis; set('#nK', v.kcal); set('#nP', v.protein); set('#nT', v.fat); set('#nW', v.carbs); set('#nF', v.fibre); autoNut = true; autoSrc = sp?.nutri ? 'saved' : 'table'; }
       else if (!n && autoNut && !nutTouched) { ['#nK', '#nP', '#nT', '#nW', '#nF'].forEach(i => set(i, '')); autoNut = false; }
-      $('#auto').textContent = !autoNut ? '' : autoSrc === 'saved' ? 'Wartości z zapisanego produktu.' : 'Wartości uzupełnione automatycznie z wbudowanej tabeli — są orientacyjne, sprawdź z opakowaniem.'; live(); };
-    $('#fN').oninput = e => { const q = e.target.value.trim().toLowerCase(); if (!en) pid = null; if (!en && !pid) autoFill(e.target.value); const m = q ? S.products.filter(x => x.typeId === typeId && x.name.toLowerCase().includes(q)).sort((a, b) => col.compare(a.name, b.name)).slice(0, 6) : [];
-      $('#sug').innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)} · ${esc(catName(t, x.catId))}</button>`).join(''); $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; $('#sug').innerHTML = ''; if (pp.nutri) draw(); }); };
+      $('#auto').textContent = !autoNut ? '' : autoSrc === 'saved' ? 'Wartości z zapisanego produktu.' : 'Wartości uzupełnione automatycznie z wbudowanej tabeli — są orientacyjne, sprawdź z opakowaniem.'; live(); 
+    };
+
+    $('#fN').oninput = e => { 
+      const q = e.target.value.trim().toLowerCase(); 
+      if (!en) pid = null; 
+      if (!en && !pid) autoFill(e.target.value); 
+      const m = q ? S.products.filter(x => x.typeId === typeId && x.name.toLowerCase().includes(q)).sort((a, b) => col.compare(a.name, b.name)).slice(0, 6) : [];
+      if (!q) {
+        updateSug();
+      } else {
+        $('#sug').innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)} · ${esc(catName(t, x.catId))}</button>`).join(''); 
+        $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; $('#sug').innerHTML = ''; if (pp.nutri) draw(); }); 
+      }
+    };
+
+    if (!en) updateSug();
+
     $('#cl').onclick = () => modal('');
     if (en) $('#rm').onclick = () => { if (confirm('Usunąć pozycję z listy? Produkt pozostanie w bazie.')) { S.entries = S.entries.filter(x => x.id !== en.id); modal(''); save(); } };
-    $('#ok').onclick = () => { const name = $('#fN').value.trim(), qty = num($('#fQ').value);
-      if (!name) return $('#err').textContent = 'Podaj nazwę produktu.'; if (!(qty > 0)) return $('#err').textContent = 'Ilość musi być większa od zera.';
-      let p = pid && prod(pid); if (!p) p = S.products.find(x => x.typeId === typeId && col.compare(x.name, name) === 0);
-      if (!p) { p = { id: uid(), typeId, name }; S.products.push(p); } p.name = name; p.catId = $('#fC').value; if (food) p.nutri = nut();
+    
+    $('#ok').onclick = () => { 
+      const name = $('#fN').value.trim(), qty = num($('#fQ').value);
+      if (!name) return $('#err').textContent = 'Podaj nazwę produktu.'; 
+      if (!(qty > 0)) return $('#err').textContent = 'Ilość musi być większa od zera.';
+      let p = pid && prod(pid); 
+      if (!p) p = S.products.find(x => x.typeId === typeId && col.compare(x.name, name) === 0);
+      if (!p) { p = { id: uid(), typeId, name }; S.products.push(p); } 
+      p.name = name; 
+      p.catId = $('#fC').value; 
+      p.usedCount = (p.usedCount || 0) + 1;
+      if (food) p.nutri = nut();
       if (!en && S.entries.some(x => x.sessionId === S.cur && x.productId === p.id && x.status !== 'bought') && !confirm('Ten produkt jest już na liście. Dodać mimo to?')) return;
-      const f = { productId: p.id, typeId, qty, unit: $('#fU').value, note: $('#fNote').value.trim(), status: $('#fS').value };
-      if (en) Object.assign(en, f); else S.entries.push({ id: uid(), sessionId: S.cur, ...f }); modal(''); save(); }; };
+      const f = { productId: p.id, typeId, qty, unit: $('#fU').value, note: $('#fNote').value.trim(), status: $('#fS').value, added: en?.added || Date.now() };
+      if (en) Object.assign(en, f); else S.entries.push({ id: uid(), sessionId: S.cur, ...f }); 
+      modal(''); save(); 
+    }; 
+  };
   draw();
 }
 
 function settings() {
   const hist = S.sessions.filter(s => s.archived).length;
   modal(`<h3 style="margin:0">Ustawienia</h3>
-  <button class="btn" id="end">Zakończ zakupy / nowa lista</button>
+  <button class="btn" id="share">Udostępnij listę tekstowo</button>
+  <button class="btn s" id="end">Zakończ zakupy / nowa lista</button>
   <button class="btn s" id="types">Rodzaje list i kategorie</button>
   <button class="btn s" id="exp">Eksportuj kopię zapasową (JSON)</button>
   <label class="btn s" style="display:flex;align-items:center;justify-content:center">Przywróć z kopii<input id="imp" type="file" accept=".json,application/json" hidden></label>
   <p style="color:var(--mut);font-size:14px">Dane są tylko na tym urządzeniu — nie ma synchronizacji. Zarchiwizowane sesje zakupów: ${hist}. Rób kopię regularnie.</p><button class="btn s" id="cl">Zamknij</button>`);
-  $('#cl').onclick = () => modal(''); $('#types').onclick = typesEditor; $('#end').onclick = endSession;
+  
+  $('#cl').onclick = () => modal(''); 
+  $('#types').onclick = typesEditor; 
+  $('#end').onclick = endSession;
+  
+  $('#share').onclick = async () => {
+    const list = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy');
+    if (!list.length) { alert('Brak produktów do kupienia na obecnej liście!'); return; }
+    const groups = {};
+    list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = t.name + ' › ' + catName(t, p.catId); (groups[key] ||= []).push(`- ${p.name} (${e.qty} ${e.unit})${e.note ? ' [' + e.note + ']' : ''}`); });
+    let text = '🛒 Lista zakupów:\n\n';
+    for (const [k, items] of Object.entries(groups)) {
+      text += `*${k}*:\n` + items.join('\n') + '\n\n';
+    }
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Lista zakupów', text: text }); } catch (err) {}
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Skopiowano listę zakupów do schowka!');
+    }
+  };
+
   $('#exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'zakupy-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
   $('#imp').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); if (!d.types || !d.products || !d.entries || !d.sessions) throw 0;
     if (!confirm('Przywrócenie ZASTĄPI wszystkie obecne dane. Kontynuować?')) return; S = mig(d); view = 'all'; modal(''); save(); } catch { alert('To nie jest poprawna kopia zapasowa.'); } };
@@ -238,27 +301,10 @@ function editType(id) {
 }
 
 (async () => { 
-  try { 
-    S = await DB.get(); 
-    if (!S) { 
-      S = seed(); 
-      await DB.put(S); 
-    } 
-  } catch (e) { 
-    S = seed(); 
-    alert('Pamięć lokalna niedostępna — dane nie zostaną zapisane (' + e.message + ').'); 
-  }
-  
+  try { S = await DB.get(); if (!S) { S = seed(); await DB.put(S); } } catch (e) { S = seed(); alert('Pamięć lokalna niedostępna — dane nie zostaną zapisane (' + e.message + ').'); }
   mig(S); 
-  
-  try {
-    await DB.put(JSON.parse(JSON.stringify(S)));
-  } catch (e) {
-    console.error('Błąd zapisu stanu po migracji:', e);
-  }
-
+  try { await DB.put(JSON.parse(JSON.stringify(S))); } catch (e) {}
   if (navigator.storage?.persist) navigator.storage.persist(); 
   render();
-  
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); 
 })();
