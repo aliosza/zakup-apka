@@ -8,7 +8,8 @@ const ICONS = { cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>', home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>', gift: '<path d="M4 11h16v9H4zM3 8h18v3H3zM12 8v12M12 8c-3 0-4-4-1-4 2 0 1 4 1 4zM12 8c3 0 4-4 1-4-2 0-1 4-1 4z"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', basket: '<path d="M3 10h18l-2 10H5zM8 10l3-6M16 10l-3-6"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
-  flame: '<path d="M12 2c0 3-2 5-2 8 0 3.3 2.7 6 6 6 3.3 0 6-2.7 6-6 0-3-2-5-2-8 0 0-1 2-2 3-1-3-3-5-6-3z"/>', calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' };
+  flame: '<path d="M12 2c0 3-2 5-2 8 0 3.3 2.7 6 6 6 3.3 0 6-2.7 6-6 0-3-2-5-2-8 0 0-1 2-2 3-1-3-3-5-6-3z"/>', calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>' };
 const ICONL = { leaf: 'Liść', bottle: 'Butelka', yarn: 'Włóczka', pencil: 'Ołówek', bag: 'Torba', basket: 'Koszyk', heart: 'Serce', home: 'Dom', gift: 'Prezent', star: 'Gwiazdka' }, ICON_KEYS = Object.keys(ICONL);
 const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ICONS.bag}</svg>`;
 const onC = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#2E2A47'; const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255,
@@ -55,7 +56,7 @@ const DB = { open: () => new Promise((ok, no) => { const r = indexedDB.open('zak
   async get() { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction('kv').objectStore('kv').get('state'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
   async put(v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'state'); t.oncomplete = ok; t.onerror = () => no(t.error); }); } };
 
-let S, appMode = 'shopping', view = 'all', filter = 'buy', shopFilter = 'all', query = '', sortMode = 'alpha';
+let S, appMode = 'shopping', view = 'all', filter = 'buy', shopFilter = 'all', query = '', sortMode = 'alpha', searchActive = false;
 let logDate = new Date().toISOString().slice(0, 10);
 let lastDeleted = null, toastTimer = null;
 
@@ -121,15 +122,20 @@ function renderModeHeader() {
   if (appMode === 'shopping') {
     $('#btnShopMode').classList.add('active');
     $('#btnTrackMode').classList.remove('active');
-    $('#subHeader').innerHTML = `<input id="q" type="search" placeholder="Szukaj na liście…" value="${esc(query)}" style="flex:1">
-      <button class="filter-btn" id="filterToggle" aria-label="Filtry">${ic('sliders', 20)} Filtry</button>
-      <select id="sortMode" aria-label="Sortowanie" style="width:auto">
-        <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>Alfabetycznie</option>
-        <option value="added" ${sortMode === 'added' ? 'selected' : ''}>Kolejność dodania</option>
-      </select>`;
-    $('#filterToggle').onclick = openFilterModal;
-    $('#q').oninput = e => { query = e.target.value.trim(); render(); };
-    $('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
+    
+    if (searchActive) {
+      $('#subHeader').innerHTML = `<input id="q" type="search" placeholder="Szukaj na liście…" value="${esc(query)}" style="flex:1" autofocus>
+        <button class="ctrl-btn" id="closeSearchBtn" aria-label="Zamknij szukanie">${ic('x', 20)}</button>`;
+      $('#q').oninput = e => { query = e.target.value.trim(); render(); };
+      $('#closeSearchBtn').onclick = () => { vibrate(); searchActive = false; query = ''; renderModeHeader(); render(); };
+    } else {
+      $('#subHeader').innerHTML = `<button class="ctrl-btn" id="filterToggle" aria-label="Filtry">${ic('sliders', 18)} Filtry</button>
+        <button class="ctrl-btn" id="sortToggle" aria-label="Sortowanie">${ic(sortMode === 'alpha' ? 'star' : 'calendar', 18)} ${sortMode === 'alpha' ? 'Alfabetycznie' : 'Dodania'}</button>
+        <button class="ctrl-btn" id="searchToggle" aria-label="Szukaj">${ic('search', 18)}</button>`;
+      $('#filterToggle').onclick = openFilterModal;
+      $('#sortToggle').onclick = toggleSortMode;
+      $('#searchToggle').onclick = () => { vibrate(); searchActive = true; renderModeHeader(); };
+    }
   } else {
     $('#btnTrackMode').classList.add('active');
     $('#btnShopMode').classList.remove('active');
@@ -141,6 +147,13 @@ function renderModeHeader() {
     $('#prevDay').onclick = () => { changeDay(-1); };
     $('#nextDay').onclick = () => { changeDay(1); };
   }
+}
+
+function toggleSortMode() {
+  vibrate();
+  sortMode = sortMode === 'alpha' ? 'added' : 'alpha';
+  renderModeHeader();
+  render();
 }
 
 function changeDay(delta) {
@@ -597,7 +610,7 @@ function editType(id) {
     const names = $('#tk').value.split('\n').map(x => x.trim()).filter(Boolean), old = id ? t.categories : [];
     const cats = names.map((n, i) => ({ id: old[i]?.id || uid(), name: n }));
     if (id) { const gone = old.slice(cats.length); if (gone.some(c => S.products.some(p => p.catId === c.id)) && !confirm('Usuwane kategorie mają produkty — trafią do „Bez kategorii”. Kontynuować?')) return; gone.forEach(c => S.products.forEach(p => { if (p.catId === c.id) p.catId = null; })); }
-    Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc').value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); 
+    Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc'].value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); 
   };
   if (id) $('#del').onclick = () => { 
     vibrate();
