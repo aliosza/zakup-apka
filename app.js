@@ -7,7 +7,8 @@ const ICONS = { cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="
   yarn: '<circle cx="12" cy="12" r="8"/><path d="M5 9c5 2 9 2 14 0M5 15c5-2 9-2 14 0M12 4c-3 5-3 11 0 16"/>', pencil: '<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>', bag: '<path d="M6 8h12l1 12H5zM9 8a3 3 0 016 0"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>', home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>', gift: '<path d="M4 11h16v9H4zM3 8h18v3H3zM12 8v12M12 8c-3 0-4-4-1-4 2 0 1 4 1 4zM12 8c3 0 4-4 1-4-2 0-1 4-1 4z"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', basket: '<path d="M3 10h18l-2 10H5zM8 10l3-6M16 10l-3-6"/>',
-  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>' };
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
+  flame: '<path d="M12 2c0 3-2 5-2 8 0 3.3 2.7 6 6 6 3.3 0 6-2.7 6-6 0-3-2-5-2-8 0 0-1 2-2 3-1-3-3-5-6-3z"/>', calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' };
 const ICONL = { leaf: 'Liść', bottle: 'Butelka', yarn: 'Włóczka', pencil: 'Ołówek', bag: 'Torba', basket: 'Koszyk', heart: 'Serce', home: 'Dom', gift: 'Prezent', star: 'Gwiazdka' }, ICON_KEYS = Object.keys(ICONL);
 const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ICONS.bag}</svg>`;
 const onC = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#2E2A47'; const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255,
@@ -33,18 +34,20 @@ function mig(s) {
   if (!s.types.some(t => t.name === 'Inne')) {
     s.types.push(mk('Inne', '#FFCFAE', 'bag', false, ['Ubrania', 'Rzeczy do domu', 'Drobiazgi', 'Różne']));
   }
+  s.logs ||= [];
   return s; 
 }
 
 const UNITS = ['szt', 'opak.', 'g', 'kg', 'ml', 'l'], ST = ['buy', 'bought', 'na'], STL = { buy: 'Do kupienia', bought: 'Kupione', na: 'Niedostępne' }, STI = { buy: '', bought: ic('check', 24), na: ic('x', 22) };
+const MEALS = ['Śniadanie', 'Drugie śniadanie', 'Obiad', 'Kolacja', 'Przekąski'];
 const mk = (name, color, icon, food, cats) => ({ id: uid(), name, color, icon, food, categories: cats.map(n => ({ id: uid(), name: n })) });
 function seed() {
-  const s = { v: 1, types: [
+  const s = { v: 1, appMode: 'shopping', types: [
     mk('Spożywcze', '#B5EAD7', 'leaf', true, ['Warzywa', 'Owoce', 'Nabiał i roślinne zamienniki', 'Mięso i ryby', 'Pieczywo', 'Produkty sypkie i kasze', 'Makarony i ryż', 'Konserwy i słoiki', 'Mrożonki', 'Przyprawy i sosy', 'Przekąski i słodycze', 'Napoje', 'Chemia domowa']),
     mk('Drogeria', '#B7DEF8', 'bottle', false, ['Higiena', 'Pielęgnacja twarzy', 'Pielęgnacja ciała', 'Włosy', 'Zdrowie', 'Środki czystości']),
     mk('Hobby i papiernicze', '#D4C1FF', 'yarn', false, ['Włóczki i nici', 'Farby i pędzle', 'Papier i karton', 'Kleje i narzędzia', 'Ozdoby', 'Zeszyty i notesy', 'Długopisy i ołówki', 'Teczki i segregatory', 'Akcesoria biurowe']),
     mk('Inne', '#FFCFAE', 'bag', false, ['Ubrania', 'Rzeczy do domu', 'Drobiazgi', 'Różne'])],
-    products: [], entries: [], sessions: [], cur: null };
+    products: [], entries: [], logs: [], sessions: [], cur: null };
   const ss = { id: uid(), name: 'Zakupy ' + new Date().toLocaleDateString('pl'), created: Date.now(), archived: false }; s.sessions.push(ss); s.cur = ss.id; return s;
 }
 
@@ -52,7 +55,8 @@ const DB = { open: () => new Promise((ok, no) => { const r = indexedDB.open('zak
   async get() { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction('kv').objectStore('kv').get('state'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
   async put(v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'state'); t.oncomplete = ok; t.onerror = () => no(t.error); }); } };
 
-let S, view = 'all', filter = 'all', shopFilter = 'all', query = '', sortMode = 'alpha';
+let S, appMode = 'shopping', view = 'all', filter = 'all', shopFilter = 'all', query = '', sortMode = 'alpha';
+let logDate = new Date().toISOString().slice(0, 10);
 let lastDeleted = null, toastTimer = null;
 
 async function save() { 
@@ -64,24 +68,27 @@ const type = id => S.types.find(t => t.id === id), prod = id => S.products.find(
 const catName = (t, id) => (t?.categories.find(c => c.id === id)?.name) || 'Bez kategorii';
 function modal(html) { const m = $('#modal'); m.innerHTML = html ? `<div class="sheet" id="sh"><div>${html}</div></div>` : ''; const sh = $('#sh'); if (sh) sh.onclick = e => { if (e.target === sh) modal(''); }; }
 const fmt = n => n == null ? '?' : String(Math.round(n * 100) / 100).replace('.', ',');
-const nutriText = r => `${fmt(r.kcal)}\u00A0kcal · B\u00A0${fmt(r.protein)}\u00A0g · T\u00A0${fmt(r.fat)}\u00A0g · W\u00A0${fmt(r.carbs)}\u00A0g · bł.\u00A0${fmt(r.fibre)}\u00A0g`;
 
-function totalsBar(list) {
-  const rs = list.filter(e => prod(e.productId).nutri || type(e.typeId).food).map(e => { const p = prod(e.productId); return p.nutri ? Nutrition.calc(p.nutri, e.qty, e.unit) : null; });
-  if (!rs.length || rs.every(r => !r)) return '';
-  const s = Nutrition.sum(rs), T = s.totals;
-  return `<div class="item" style="display:block;background:#E4D9FF;color:#2E2A47;--c:#CDB9FF"><b>Razem: ${fmt(T.kcal)} kcal</b><br>białko ${fmt(T.protein)} g · tłuszcze ${fmt(T.fat)} g · węglowodany ${fmt(T.carbs)} g · błonnik ${fmt(T.fibre)} g` +
-    (s.incomplete ? `<br><small>Uwaga: ${s.incomplete} z ${s.count} pozycji ma niepełne lub nieznane dane.</small>` : `<br><small>Suma dla pozycji widocznych na liście (${s.used}).</small>`) + `</div>`;
-}
-function nutriLine(e) { const p = prod(e.productId); if (!p?.nutri) return ''; const r = Nutrition.calc(p.nutri, e.qty, e.unit);
+function nutriLine(e) { 
+  const p = prod(e.productId); 
+  if (!p?.nutri) return ''; 
+  const r = Nutrition.calc(p.nutri, e.qty, e.unit);
   if (!r) return `<span class="nu">Wartości odżywcze: brak przelicznika dla „${esc(e.unit)}”</span>`;
-  return `<span class="nu">${nutriText(r)}</span>`; }
+  return `<span class="nu">${fmt(r.kcal)} kcal</span>`; 
+}
 
 function removeEntry(id) {
-  const idx = S.entries.findIndex(x => x.id === id);
-  if (idx === -1) return;
-  lastDeleted = { entry: S.entries[idx], index: idx };
-  S.entries.splice(idx, 1);
+  if (appMode === 'shopping') {
+    const idx = S.entries.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    lastDeleted = { type: 'entry', item: S.entries[idx], index: idx };
+    S.entries.splice(idx, 1);
+  } else {
+    const idx = S.logs.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    lastDeleted = { type: 'log', item: S.logs[idx], index: idx };
+    S.logs.splice(idx, 1);
+  }
   save();
   showToast();
 }
@@ -97,7 +104,8 @@ function showToast() {
 $('#undoBtn').onclick = () => {
   if (!lastDeleted) return;
   vibrate();
-  S.entries.splice(lastDeleted.index, 0, lastDeleted.entry);
+  if (lastDeleted.type === 'entry') S.entries.splice(lastDeleted.index, 0, lastDeleted.item);
+  else S.logs.splice(lastDeleted.index, 0, lastDeleted.item);
   lastDeleted = null;
   const toast = $('#toast');
   toast.classList.remove('show');
@@ -106,7 +114,59 @@ $('#undoBtn').onclick = () => {
   save();
 };
 
+function switchMode(newMode) {
+  vibrate();
+  appMode = newMode;
+  S.appMode = appMode;
+  renderModeHeader();
+  render();
+}
+
+function renderModeHeader() {
+  $('#btnShopMode').innerHTML = `${ic('cart', 16)} Zakupy`;
+  $('#btnTrackMode').innerHTML = `${ic('flame', 16)} Dzisiaj`;
+  
+  if (appMode === 'shopping') {
+    $('#btnShopMode').classList.add('active');
+    $('#btnTrackMode').classList.remove('active');
+    $('#subHeader').innerHTML = `<input id="q" type="search" placeholder="Szukaj na liście…" value="${esc(query)}" style="flex:1">
+      <button class="filter-btn" id="filterToggle" aria-label="Filtry">${ic('sliders', 20)} Filtry</button>
+      <select id="sortMode" aria-label="Sortowanie" style="width:auto;min-height:42px;font-size:14px;padding:4px 8px">
+        <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>Alfabetycznie</option>
+        <option value="added" ${sortMode === 'added' ? 'selected' : ''}>Kolejność dodania</option>
+      </select>`;
+    $('#filterToggle').onclick = openFilterModal;
+    $('#q').oninput = e => { query = e.target.value.trim(); render(); };
+    $('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
+  } else {
+    $('#btnTrackMode').classList.add('active');
+    $('#btnShopMode').classList.remove('active');
+    $('#subHeader').innerHTML = `<button class="ib" id="prevDay">${ic('minus', 16)}</button>
+      <input type="date" id="logDateInput" value="${logDate}" style="flex:1;text-align:center;font-weight:700">
+      <button class="ib" id="nextDay">${ic('plus', 16)}</button>`;
+    
+    $('#logDateInput').onchange = e => { logDate = e.target.value; render(); };
+    $('#prevDay').onclick = () => { changeDay(-1); };
+    $('#nextDay').onclick = () => { changeDay(1); };
+  }
+}
+
+function changeDay(delta) {
+  vibrate();
+  const d = new Date(logDate);
+  d.setDate(d.getDate() + delta);
+  logDate = d.toISOString().slice(0, 10);
+  renderModeHeader();
+  render();
+}
+
 function render() {
+  if (appMode === 'shopping') renderShopping();
+  else renderTracker();
+  initSwipeGestures();
+}
+
+function renderShopping() {
   let list = S.entries.filter(e => {
     if (e.sessionId !== S.cur || (view !== 'all' && e.typeId !== view)) return false;
     if (filter !== 'all' && e.status !== filter) return false;
@@ -119,12 +179,12 @@ function render() {
     list = list.filter(e => prod(e.productId).name.toLowerCase().includes(qLower));
   }
   
-  if (!list.length) { $('#main').innerHTML = `<div class="empty">Brak produktów.<br>Dotknij „+”, aby dodać pierwszy.</div>`; return; }
+  if (!list.length) { $('#main').innerHTML = `<div class="empty">Brak produktów.<br>Dotknij „+”, aby dodać pierwszy do zakupów.</div>`; return; }
   
   const groups = {}; 
   list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = view === 'all' ? t.name + ' › ' + catName(t, p.catId) : catName(t, p.catId); (groups[key] ||= { t, items: [] }).items.push(e); });
   
-  $('#main').innerHTML = totalsBar(list) + Object.keys(groups).sort(col.compare).map(k => `<h2><span class="pill" style="--c:${groups[k].t.color};--on:${onC(groups[k].t.color)}">${ic(groups[k].t.icon, 16)}${esc(k)}</span></h2>` +
+  $('#main').innerHTML = Object.keys(groups).sort(col.compare).map(k => `<h2><span class="pill" style="--c:${groups[k].t.color};--on:${onC(groups[k].t.color)}">${ic(groups[k].t.icon, 16)}${esc(k)}</span></h2>` +
     groups[k].items.sort((a, b) => sortMode === 'alpha' ? col.compare(prod(a.productId).name, prod(b.productId).name) : (a.added || 0) - (b.added || 0))
     .map(e => `<div class="item-wrapper"><div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color}" data-item-id="${e.id}">
     <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
@@ -135,8 +195,61 @@ function render() {
       <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button>
       <button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
     </div></div></div>`).join('')).join('');
+}
 
-  initSwipeGestures();
+function renderTracker() {
+  const dayLogs = S.logs.filter(l => l.date === logDate);
+  const calculated = dayLogs.map(l => {
+    const p = prod(l.productId);
+    return { log: l, p, r: p?.nutri ? Nutrition.calc(p.nutri, l.qty, l.unit) : null };
+  });
+
+  const totals = { kcal: 0, protein: 0, fat: 0, carbs: 0, fibre: 0 };
+  calculated.forEach(c => {
+    if (c.r) {
+      totals.kcal += c.r.kcal || 0;
+      totals.protein += c.r.protein || 0;
+      totals.fat += c.r.fat || 0;
+      totals.carbs += c.r.carbs || 0;
+      totals.fibre += c.r.fibre || 0;
+    }
+  });
+
+  let html = `<div class="tracker-summary">
+    <div style="font-size:13px;color:var(--mut);font-weight:700">Spożycie w dniu ${logDate}</div>
+    <div class="main-k">${fmt(totals.kcal)} <span style="font-size:16px;font-weight:600;color:var(--ink)">kcal</span></div>
+    <div class="macro-grid">
+      <div class="macro-item">${fmt(totals.protein)}g <span>Białko</span></div>
+      <div class="macro-item">${fmt(totals.fat)}g <span>Tłuszcze</span></div>
+      <div class="macro-item">${fmt(totals.carbs)}g <span>Węgle</span></div>
+      <div class="macro-item">${fmt(totals.fibre)}g <span>Błonnik</span></div>
+    </div>
+  </div>`;
+
+  if (!dayLogs.length) {
+    html += `<div class="empty">Brak wpisów dla tego dnia.<br>Dotknij „+”, aby zarejestrować posiłek.</div>`;
+  } else {
+    MEALS.forEach(meal => {
+      const items = calculated.filter(c => c.log.meal === meal);
+      if (items.length) {
+        const mealKcal = items.reduce((s, i) => s + (i.r?.kcal || 0), 0);
+        html += `<h2><span class="pill" style="--c:#D4C1FF;--on:#2E2A47">${esc(meal)} · ${fmt(mealKcal)} kcal</span></h2>` +
+          items.map(i => `<div class="item-wrapper"><div class="item" style="--c:#CDB9FF" data-item-id="${i.log.id}">
+            <div class="t" data-log-edit="${i.log.id}">
+              <b>${esc(i.p?.name || 'Produkt')}</b>
+              <small>${esc(String(i.log.qty).replace('.', ','))} ${esc(i.log.unit)}</small>
+              <span class="nu">${i.r ? fmt(i.r.kcal) + ' kcal · B ' + fmt(i.r.protein) + 'g · T ' + fmt(i.r.fat) + 'g · W ' + fmt(i.r.carbs) + 'g' : 'Brak przelicznika'}</span>
+            </div>
+            <div class="acts">
+              <button class="ib" data-log-edit="${i.log.id}" aria-label="Edytuj">${ic('pencil', 18)}</button>
+              <button class="ib del" data-d="${i.log.id}" aria-label="Usuń z dziennika">${ic('trash', 18)}</button>
+            </div>
+          </div></div>`).join('');
+      }
+    });
+  }
+
+  $('#main').innerHTML = html;
 }
 
 function openFilterModal() {
@@ -170,9 +283,6 @@ function openFilterModal() {
 
   $('#closeFilter').onclick = () => { vibrate(); modal(''); };
 }
-
-$('#filterToggle').onclick = openFilterModal;
-$('#filterToggle').innerHTML = `${ic('sliders', 20)} Filtry`;
 
 function initSwipeGestures() {
   document.querySelectorAll('.item').forEach(item => {
@@ -213,6 +323,19 @@ function initSwipeGestures() {
 }
 
 document.addEventListener('click', e => { 
+  const modeBtn = e.target.closest('[data-mode]');
+  if (modeBtn) {
+    switchMode(modeBtn.dataset.mode);
+    return;
+  }
+
+  const logEdit = e.target.closest('[data-log-edit]');
+  if (logEdit) {
+    vibrate();
+    trackerForm(logEdit.dataset.logEdit);
+    return;
+  }
+
   const b = e.target.closest('[data-v],[data-f],[data-s],[data-e],[data-d],[data-plus],[data-minus],[data-shop]'); 
   if (!b) return; const d = b.dataset;
   vibrate();
@@ -233,9 +356,12 @@ document.addEventListener('click', e => {
   else if (d.d) { removeEntry(d.d); } 
 });
 
-$('#q').oninput = e => { query = e.target.value.trim(); render(); };
-$('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
-$('#add').onclick = () => { vibrate(); entryForm(null); }; 
+$('#add').onclick = () => { 
+  vibrate(); 
+  if (appMode === 'shopping') entryForm(null); 
+  else trackerForm(null); 
+}; 
+
 $('#cfg').onclick = () => { vibrate(); settings(); }; 
 $('#cfg').innerHTML = ic('sliders', 24);
 
@@ -245,7 +371,7 @@ function entryForm(id) {
   const en = id && S.entries.find(x => x.id === id), p0 = en && prod(en.productId);
   let catTouched = false, nutTouched = false, autoNut = false, autoSrc = '', typeId = en ? en.typeId : (view !== 'all' ? view : S.types[0].id), pid = p0 ? p0.id : null;
   const draw = () => { const t = type(typeId), p = pid && prod(pid), food = t.food;
-    modal(`<h3 style="margin:0">${en ? 'Edytuj pozycję' : 'Dodaj produkt'}</h3>
+    modal(`<h3 style="margin:0">${en ? 'Edytuj pozycję' : 'Dodaj produkt do zakupów'}</h3>
     <label>Lista</label><select id="fT" ${en ? 'disabled' : ''}>${opts(S.types.map(t => [t.id, t.name]), typeId)}</select>
     <label>Nazwa produktu</label><input id="fN" value="${esc(p?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div><div class="err" id="err"></div>
     <label>Kategoria</label><select id="fC">${opts(t.categories.map(c => [c.id, c.name]), p?.catId)}</select>
@@ -253,10 +379,10 @@ function entryForm(id) {
     <div class="g2"><div><label>Ilość</label><input id="fQ" inputmode="decimal" value="${en ? en.qty : 1}"></div><div><label>Jednostka</label><select id="fU">${opts(UNITS.map(u => [u, u]), en?.unit || (food ? 'szt' : 'szt'))}</select></div></div>
     <label>Notatka (opcjonalnie)</label><input id="fNote" value="${esc(en?.note || '')}">
     ${food ? `<label><input type="checkbox" id="showNut" style="width:auto;min-height:0"> Dodaj wartości odżywcze</label>` : ''}
-    ${food ? `<div id="nutBox" style="display:none"> <label>Wartości odżywcze (opcjonalnie)</label><div class="g2"><div><label>Wartości na 100</label><select id="nB">${opts([['g', 'g'], ['ml', 'ml']], p?.nutri?.basis)}</select></div><div><label>Energia (kcal)</label><input id="nK" inputmode="decimal" placeholder="kcal" value="${p?.nutri?.values.kcal ?? ''}"></div></div>
+    ${food ? `<div id="nutBox" style="display:none"> <label>Wartości odżywcze (na 100g / 100ml)</label><div class="g2"><div><label>Baza</label><select id="nB">${opts([['g', 'g'], ['ml', 'ml']], p?.nutri?.basis)}</select></div><div><label>Energia (kcal)</label><input id="nK" inputmode="decimal" placeholder="kcal" value="${p?.nutri?.values.kcal ?? ''}"></div></div>
     <div class="g2" style="margin-top:8px"><div><label>Białko (g)</label><input id="nP" inputmode="decimal" placeholder="białko (g)" value="${p?.nutri?.values.protein ?? ''}"></div><div><label>Tłuszcze (g)</label><input id="nT" inputmode="decimal" placeholder="tłuszcze (g)" value="${p?.nutri?.values.fat ?? ''}"></div></div>
     <div class="g2" style="margin-top:8px"><div><label>Węglowodany (g)</label><input id="nW" inputmode="decimal" placeholder="węglowodany (g)" value="${p?.nutri?.values.carbs ?? ''}"></div><div><label>Błonnik (g)</label><input id="nF" inputmode="decimal" placeholder="błonnik (g)" value="${p?.nutri?.values.fibre ?? ''}"></div></div><div id="live" class="nu" style="margin-top:6px"></div><div id="auto" class="nu" style="font-style:italic"></div>
-    <small style="color:var(--mut)">Puste pole = nieznane (nie zero).</small></div>` : ''}
+    <small style="color:var(--mut)">Puste pole = nieznane.</small></div>` : ''}
     <label>Status</label><select id="fS">${opts(ST.map(s => [s, STL[s]]), en?.status || 'buy')}</select>
     <button class="btn" id="ok">Zapisz</button>${en ? '<button class="btn s" id="rm">Usuń z listy</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
     
@@ -264,7 +390,7 @@ function entryForm(id) {
 
     const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
     const nut = () => { if (!food || !$('#showNut').checked) return null; const v = { kcal: num($('#nK').value), protein: num($('#nP').value), fat: num($('#nT').value), carbs: num($('#nW').value), fibre: num($('#nF').value) }; if (Object.values(v).every(x => x == null)) return null; return { basis: $('#nB').value, values: { ...(p?.nutri?.values || {}), ...v } }; };
-    const live = () => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Razem: ' + nutriText(r) : 'Brak przelicznika dla tej jednostki'; };
+    const live = () => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Energia: ' + fmt(r.kcal) + ' kcal' : 'Brak przelicznika dla tej jednostki'; };
     
     if (food) {
       const cb = $('#showNut'), box = $('#nutBox');
@@ -301,16 +427,11 @@ function entryForm(id) {
       if (!catTouched && catId && t.categories.some(c => c.id === catId)) $('#fC').value = catId;
       
       if (sp?.defaultShop) $('#fShop').value = sp.defaultShop;
-      else if (nm) {
-        const found = S.products.find(x => Foods.norm(x.name) === Foods.norm(nm));
-        const last = S.entries.slice().reverse().find(e => found && e.productId === found.id && e.shop);
-        if (last) $('#fShop').value = last.shop;
-      }
 
       if (!food) return; const set = (id, v) => $(id).value = v ?? '';
       if (n && !nutTouched) { const v = n.values; $('#nB').value = n.basis; set('#nK', v.kcal); set('#nP', v.protein); set('#nT', v.fat); set('#nW', v.carbs); set('#nF', v.fibre); autoNut = true; autoSrc = sp?.nutri ? 'saved' : 'table'; $('#showNut').checked = true; $('#nutBox').style.display = 'block'; }
       else if (!n && autoNut && !nutTouched) { ['#nK', '#nP', '#nT', '#nW', '#nF'].forEach(i => set(i, '')); autoNut = false; }
-      $('#auto').textContent = !autoNut ? '' : autoSrc === 'saved' ? 'Wartości z zapisanego produktu.' : 'Wartości uzupełnione automatycznie z wbudowanej tabeli.'; live(); 
+      $('#auto').textContent = !autoNut ? '' : autoSrc === 'saved' ? 'Wartości z zapisanego produktu.' : 'Wartości uzupełnione automatycznie.'; live(); 
     };
 
     $('#fN').oninput = e => { 
@@ -349,16 +470,83 @@ function entryForm(id) {
   draw();
 }
 
+function trackerForm(logId) {
+  const lg = logId && S.logs.find(x => x.id === logId), p0 = lg && prod(lg.productId);
+  let pid = p0 ? p0.id : null, foodType = S.types.find(t => t.food) || S.types[0];
+  
+  modal(`<h3 style="margin:0">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
+  <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), lg?.meal || MEALS[0])}</select>
+  <label>Nazwa produktu</label><input id="tN" value="${esc(p0?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div><div class="err" id="err"></div>
+  <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${lg ? lg.qty : 100}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), lg?.unit || 'g')}</select></div></div>
+  <button class="btn" id="ok">Zapisz w dzienniku</button>${lg ? '<button class="btn s" id="rm">Usuń wpis</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
+
+  const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
+
+  const updateSug = () => {
+    const recents = S.products.filter(x => x.nutri).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
+    $('#sug').innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+    $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { 
+      vibrate(); pid = b.dataset.p; const pp = prod(pid); 
+      $('#tN').value = pp.name;
+    });
+  };
+
+  $('#tN').oninput = e => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!lg) pid = null;
+    const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
+    if (!q) updateSug();
+    else {
+      $('#sug').innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
+      $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); $('#tN').value = pp.name; $('#sug').innerHTML = ''; });
+    }
+  };
+
+  if (!lg) updateSug();
+
+  $('#cl').onclick = () => { vibrate(); modal(''); };
+  if (lg) $('#rm').onclick = () => { vibrate(); removeEntry(lg.id); modal(''); };
+
+  $('#ok').onclick = () => {
+    vibrate();
+    const name = $('#tN').value.trim(), qty = num($('#tQ').value);
+    if (!name) return $('#err').textContent = 'Podaj nazwę produktu.';
+    if (!(qty > 0)) return $('#err').textContent = 'Ilość musi być większa od zera.';
+    
+    let p = pid && prod(pid);
+    if (!p) p = S.products.find(x => col.compare(x.name, name) === 0);
+    if (!p) {
+      const f = Foods.find(name, foodType.categories.map(c => c.name));
+      p = { id: uid(), typeId: foodType.id, name, catId: foodType.categories[0]?.id, nutri: f?.n || null };
+      S.products.push(p);
+    }
+    p.usedCount = (p.usedCount || 0) + 1;
+
+    const logData = { date: logDate, meal: $('#tMeal').value, productId: p.id, qty, unit: $('#tU').value };
+    if (lg) Object.assign(lg, logData);
+    else S.logs.push({ id: uid(), ...logData });
+
+    modal(''); save();
+  };
+}
+
 function settings() {
   const hist = S.sessions.filter(s => s.archived).length;
   modal(`<h3 style="margin:0">Ustawienia</h3>
-  <button class="btn" id="share">Udostępnij listę tekstowo</button>
+  <label>Aktualny tryb aplikacji</label>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn ${appMode === 'shopping' ? '' : 's'}" id="setShop" style="flex:1">Lista zakupów</button>
+    <button class="btn ${appMode === 'tracker' ? '' : 's'}" id="setTrack" style="flex:1">Dziennik kalorii</button>
+  </div>
+  <button class="btn s" id="share">Udostępnij listę tekstowo</button>
   <button class="btn s" id="end">Zakończ zakupy / nowa lista</button>
   <button class="btn s" id="types">Rodzaje list i kategorie</button>
   <button class="btn s" id="exp">Eksportuj kopię zapasową (JSON)</button>
   <label class="btn s" style="display:flex;align-items:center;justify-content:center">Przywróć z kopii<input id="imp" type="file" accept=".json,application/json" hidden></label>
-  <p style="color:var(--mut);font-size:14px">Dane są tylko na tym urządzeniu. Zarchiwizowane sesje: ${hist}.</p><button class="btn s" id="cl">Zamknij</button>`);
+  <p style="color:var(--mut);font-size:14px">Dane są zapisane na tym urządzeniu. Zarchiwizowane sesje: ${hist}.</p><button class="btn s" id="cl">Zamknij</button>`);
   
+  $('#setShop').onclick = () => { switchMode('shopping'); modal(''); };
+  $('#setTrack').onclick = () => { switchMode('tracker'); modal(''); };
   $('#cl').onclick = () => { vibrate(); modal(''); }; 
   $('#types').onclick = () => { vibrate(); typesEditor(); }; 
   $('#end').onclick = () => { vibrate(); endSession(); };
@@ -377,7 +565,7 @@ function settings() {
 
   $('#exp').onclick = () => { vibrate(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'zakupy-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
   $('#imp').onchange = async e => { vibrate(); try { const d = JSON.parse(await e.target.files[0].text()); if (!d.types || !d.products || !d.entries || !d.sessions) throw 0;
-    if (!confirm('Przywrócenie ZASTĄPI obecne dane. Kontynuować?')) return; S = mig(d); view = 'all'; modal(''); save(); } catch { alert('Niepoprawna kopia zapasowa.'); } };
+    if (!confirm('Przywrócenie ZASTĄPI obecne dane. Kontynuować?')) return; S = mig(d); appMode = S.appMode || 'shopping'; view = 'all'; modal(''); save(); renderModeHeader(); } catch { alert('Niepoprawna kopia zapasowa.'); } };
 }
 
 function endSession() {
@@ -429,8 +617,10 @@ function editType(id) {
 (async () => { 
   try { S = await DB.get(); if (!S) { S = seed(); await DB.put(S); } } catch { S = seed(); }
   mig(S); 
+  appMode = S.appMode || 'shopping';
   try { await DB.put(JSON.parse(JSON.stringify(S))); } catch {}
   if (navigator.storage?.persist) navigator.storage.persist(); 
+  renderModeHeader();
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); 
 })();
