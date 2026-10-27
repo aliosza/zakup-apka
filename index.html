@@ -28,9 +28,9 @@ button:active, .chip:active, .btn:active, .fab:active, .gear:active, .ib:active,
   opacity: 0.8;
 }
 
-.chip{flex:none;min-height:44px;padding:0 16px;border-radius:22px;border:2px solid var(--c,var(--line));background:var(--card);color:var(--on,var(--ink));font-weight:600;font-size:16px;display:flex;align-items:center;gap:7px}
+.chip{flex:none;min-height:40px;padding:0 14px;border-radius:20px;border:2px solid var(--c,var(--line));background:var(--card);color:var(--on,var(--ink));font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px}
 .chip.on{background:var(--c,var(--pri));color:var(--on,#2E2A47)}@media(prefers-color-scheme:dark){.chip:not(.on){color:var(--c,var(--ink))}}
-.f{min-height:36px;font-size:14px;padding:0 12px;gap:4px}
+.f{min-height:34px;font-size:13px;padding:0 10px;gap:4px}
 h2{margin:20px 12px 8px}.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;background:var(--c);color:var(--on);font-weight:700;font-size:15px}
 
 .item-wrapper{margin:0 12px 8px;overflow:hidden;border-radius:var(--r)}
@@ -56,13 +56,17 @@ h2{margin:20px 12px 8px}.pill{display:inline-flex;align-items:center;gap:7px;pad
 .t{flex:1;min-width:0}.t b{display:block;font-weight:700}.t small{color:var(--mut);display:block}.p .t b{text-decoration:line-through;color:var(--mut)}
 .nu{font-size:13px;font-weight:600;color:var(--vio)}
 
-.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:62px;height:62px;border-radius:31px;border:0;background:var(--fab);color:var(--fab-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(100px);background:var(--card);color:var(--ink);border:2px solid var(--line);padding:10px 18px;border-radius:999px;box-shadow:0 10px 25px rgba(0,0,0,.15);display:flex;align-items:center;gap:12px;z-index:10;font-weight:600;transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)}
+.fab{position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom));width:62px;height:62px;border-radius:31px;border:0;background:var(--fab);color:var(--fab-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:8}
+
+/* Poprawione pozycjonowanie powiadomienia Toast nad systemowym paskiem gestów */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(100px);background:var(--card);color:var(--ink);border:2px solid var(--line);padding:10px 18px;border-radius:999px;box-shadow:0 10px 25px rgba(0,0,0,.15);display:flex;align-items:center;gap:12px;z-index:20;font-weight:600;transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast button{background:var(--pri);border:0;padding:6px 14px;border-radius:999px;font-weight:800;color:#2E2A47;cursor:pointer}
 
-.gear{margin-left:auto;background:var(--card);border:2px solid var(--line);border-radius:22px;min-width:44px;min-height:44px;color:var(--ink);display:flex;align-items:center;justify-content:center}
-.sheet{position:fixed;inset:0;background:rgba(21,18,33,.6);z-index:9;display:flex;align-items:flex-end}
+.gear, .filter-btn{background:var(--card);border:2px solid var(--line);border-radius:22px;min-width:44px;min-height:44px;color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0 14px;gap:6px;font-family:inherit;font-weight:700;font-size:15px}
+.gear{margin-left:auto}
+
+.sheet{position:fixed;inset:0;background:rgba(21,18,33,.6);z-index:30;display:flex;align-items:flex-end}
 .sheet>div{background:var(--bg);width:100%;max-height:92%;overflow:auto;border-radius:28px 28px 0 0;padding:18px 14px calc(16px + env(safe-area-inset-bottom))}
 label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin:10px 0 3px}
 input,select,textarea{width:100%;min-height:46px;font-family:inherit;font-size:16px;padding:8px 14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
@@ -70,10 +74,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri)}inp
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{min-height:50px;border-radius:16px;border:0;background:var(--pri);color:#2E2A47;font-family:inherit;font-weight:800;font-size:16px;padding:0 16px;width:100%;margin-top:12px}
 .btn.s{background:var(--card);color:var(--ink);border:2px solid var(--line)}.btn.d{background:#FF9AA8}
 .sug{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.empty{text-align:center;color:var(--mut);padding:50px 20px}.err{color:#D63A5C;font-size:14px;font-weight:600}
-</style></head><body><header><div class="row"><b class="ttl">Zakupy</b><button class="gear" id="cfg" aria-label="Ustawienia">⚙</button></div>
-<div class="scroll" id="tabs"></div>
-<div class="scroll" id="filt"></div>
-<div class="scroll" id="shopFilt" style="display:none"></div>
+</style></head><body><header><div class="row"><b class="ttl">Zakupy</b><button class="filter-btn" id="filterToggle" aria-label="Filtry">🎯 Filtry</button><button class="gear" id="cfg" aria-label="Ustawienia">⚙</button></div>
 <div class="row" style="margin-top:6px"><input id="q" type="search" placeholder="Szukaj na liście…" style="flex:1"><select id="sortMode" aria-label="Sortowanie" style="width:auto;min-height:42px;font-size:14px;padding:4px 8px"><option value="alpha">Alfabetycznie</option><option value="added">Kolejność dodania</option></select></div></header>
 <main id="main"></main><button class="fab" id="add" aria-label="Dodaj produkt">+</button><div id="modal"></div>
 <div class="toast" id="toast"><span>Usunięto pozycję</span><button id="undoBtn">Cofnij</button></div>
