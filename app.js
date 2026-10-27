@@ -52,7 +52,7 @@ const DB = { open: () => new Promise((ok, no) => { const r = indexedDB.open('zak
   async get() { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction('kv').objectStore('kv').get('state'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
   async put(v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'state'); t.oncomplete = ok; t.onerror = () => no(t.error); }); } };
 
-let S, view = 'all', filter = 'buy', shopFilter = 'all', query = '', sortMode = 'alpha';
+let S, view = 'all', filter = 'all', shopFilter = 'all', query = '', sortMode = 'alpha';
 let lastDeleted = null, toastTimer = null;
 
 async function save() { 
@@ -104,24 +104,8 @@ $('#undoBtn').onclick = () => {
 };
 
 function render() {
-  $('#tabs').innerHTML = `<button class="chip ${view === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-v="all">${ic('cart', 18)} Wszystko</button>` + S.types.map(t => `<button class="chip ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${ic(t.icon, 18)} ${esc(t.name)}</button>`).join('');
-  $('#filt').innerHTML = [...ST, 'all'].map(f => `<button class="chip f ${filter === f ? 'on' : ''}" style="--c:${FC[f]};--on:${onC(FC[f])}" data-f="${f}">${f === 'all' ? 'Wszystkie' : STL[f]}</button>`).join('');
-  
-  const sessionEntries = S.entries.filter(e => e.sessionId === S.cur);
-  const shops = [...new Set(sessionEntries.map(e => e.shop).filter(Boolean))].sort(col.compare);
-  
-  const shopBox = $('#shopFilt');
-  if (shops.length > 0) {
-    shopBox.style.display = 'flex';
-    shopBox.innerHTML = `<button class="chip f ${shopFilter === 'all' ? 'on' : ''}" style="--c:#FFCFAE;--on:${onC('#FFCFAE')}" data-shop="all">🏪 Wszystkie sklepy</button>` +
-      shops.map(s => `<button class="chip f ${shopFilter === s ? 'on' : ''}" style="--c:#B7DEF8;--on:${onC('#B7DEF8')}" data-shop="${esc(s)}">🏪 ${esc(s)}</button>`).join('');
-  } else {
-    shopBox.style.display = 'none';
-  }
-
   let list = S.entries.filter(e => {
     if (e.sessionId !== S.cur || (view !== 'all' && e.typeId !== view)) return false;
-    if (filter === 'all' && e.status === 'bought') return false;
     if (filter !== 'all' && e.status !== filter) return false;
     if (shopFilter !== 'all' && (e.shop || 'Brak') !== shopFilter) return false;
     return true;
@@ -149,6 +133,40 @@ function render() {
 
   initSwipeGestures();
 }
+
+function openFilterModal() {
+  vibrate();
+  const sessionEntries = S.entries.filter(e => e.sessionId === S.cur);
+  const shops = [...new Set(sessionEntries.map(e => e.shop).filter(Boolean))].sort(col.compare);
+
+  modal(`<h3 style="margin:0">Filtry i widok</h3>
+  
+  <label>Rodzaj listy</label>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="chip f ${view === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-v="all">Wszystko</button>
+    ${S.types.map(t => `<button class="chip f ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${esc(t.name)}</button>`).join('')}
+  </div>
+
+  <label>Status</label>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="chip f ${filter === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-f="all">Wszystkie</button>
+    ${ST.map(f => `<button class="chip f ${filter === f ? 'on' : ''}" style="--c:${FC[f]};--on:${onC(FC[f])}" data-f="${f}">${STL[f]}</button>`).join('')}
+  </div>
+
+  ${shops.length > 0 ? `
+    <label>Sklep</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="chip f ${shopFilter === 'all' ? 'on' : ''}" style="--c:#FFCFAE;--on:${onC('#FFCFAE')}" data-shop="all">Wszystkie sklepy</button>
+      ${shops.map(s => `<button class="chip f ${shopFilter === s ? 'on' : ''}" style="--c:#B7DEF8;--on:${onC('#B7DEF8')}" data-shop="${esc(s)}">${esc(s)}</button>`).join('')}
+    </div>
+  ` : ''}
+
+  <button class="btn" id="closeFilter">Zastosuj i zamknij</button>`);
+
+  $('#closeFilter').onclick = () => { vibrate(); modal(''); };
+}
+
+$('#filterToggle').onclick = openFilterModal;
 
 function initSwipeGestures() {
   document.querySelectorAll('.item').forEach(item => {
@@ -190,9 +208,9 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-v],[data-f],[data-s],[data-e],[data-d],[data-plus],[data-minus],[data-shop]'); 
   if (!b) return; const d = b.dataset;
   vibrate();
-  if (d.v) { view = d.v; render(); } 
-  else if (d.f) { filter = d.f; render(); }
-  else if (d.shop) { shopFilter = d.shop; render(); }
+  if (d.v) { view = d.v; render(); openFilterModal(); } 
+  else if (d.f) { filter = d.f; render(); openFilterModal(); }
+  else if (d.shop) { shopFilter = d.shop; render(); openFilterModal(); }
   else if (d.s) { const en = S.entries.find(x => x.id === d.s); en.status = ST[(ST.indexOf(en.status) + 1) % 3]; save(); } 
   else if (d.e) entryForm(d.e);
   else if (d.plus || d.minus) {
@@ -211,8 +229,7 @@ $('#q').oninput = e => { query = e.target.value.trim(); render(); };
 $('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
 $('#add').onclick = () => { vibrate(); entryForm(null); }; 
 $('#cfg').onclick = () => { vibrate(); settings(); }; 
-$('#cfg').innerHTML = ic('sliders', 24); 
-$('#add').innerHTML = ic('plus', 30);
+$('#cfg').innerHTML = ic('sliders', 24);
 
 const opts = (arr, sel) => arr.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
 
