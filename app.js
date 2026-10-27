@@ -7,7 +7,7 @@ const ICONS = { cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="
   yarn: '<circle cx="12" cy="12" r="8"/><path d="M5 9c5 2 9 2 14 0M5 15c5-2 9-2 14 0M12 4c-3 5-3 11 0 16"/>', pencil: '<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>', bag: '<path d="M6 8h12l1 12H5zM9 8a3 3 0 016 0"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>', home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>', gift: '<path d="M4 11h16v9H4zM3 8h18v3H3zM12 8v12M12 8c-3 0-4-4-1-4 2 0 1 4 1 4zM12 8c3 0 4-4 1-4-2 0-1 4-1 4z"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', basket: '<path d="M3 10h18l-2 10H5zM8 10l3-6M16 10l-3-6"/>',
-  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>' };
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>', gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>' };
 const ICONL = { leaf: 'Liść', bottle: 'Butelka', yarn: 'Włóczka', pencil: 'Ołówek', bag: 'Torba', basket: 'Koszyk', heart: 'Serce', home: 'Dom', gift: 'Prezent', star: 'Gwiazdka' }, ICON_KEYS = Object.keys(ICONL);
 const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ICONS.bag}</svg>`;
 const onC = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#2E2A47'; const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255,
@@ -144,7 +144,7 @@ function openFilterModal() {
   <label>Rodzaj listy</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
     <button class="chip f ${view === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-v="all">Wszystko</button>
-    ${S.types.map(t => `<button class="chip f ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${ic(t.icon, 16)} ${esc(t.name)}</button>`).join('')}
+    ${S.types.map(t => `<button class="chip f ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${ic(t.icon, 16)}${esc(t.name)}</button>`).join('')}
   </div>
 
   <label>Status</label>
@@ -168,6 +168,8 @@ function openFilterModal() {
 
 $('#filterToggle').onclick = openFilterModal;
 $('#filterToggle').innerHTML = `${ic('sliders', 20)} Filtry`;
+$('#cfg').innerHTML = ic('gear', 22);
+$('#add').innerHTML = ic('plus', 30);
 
 function initSwipeGestures() {
   document.querySelectorAll('.item').forEach(item => {
@@ -229,8 +231,7 @@ document.addEventListener('click', e => {
 $('#q').oninput = e => { query = e.target.value.trim(); render(); };
 $('#sortMode').onchange = e => { sortMode = e.target.value; render(); };
 $('#add').onclick = () => { vibrate(); entryForm(null); }; 
-$('#cfg').onclick = () => { vibrate(); settings(); }; 
-$('#cfg').innerHTML = ic('sliders', 24);
+$('#cfg').onclick = () => { vibrate(); settings(); };
 
 const opts = (arr, sel) => arr.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
 
@@ -279,151 +280,4 @@ function entryForm(id) {
       const recents = S.products.filter(x => x.typeId === typeId).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
       $('#sug').innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
       $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { 
-        vibrate(); pid = b.dataset.p; const pp = prod(pid); 
-        $('#fN').value = pp.name; $('#fC').value = pp.catId; 
-        if (pp.defaultShop) $('#fShop').value = pp.defaultShop;
-        else { const last = S.entries.slice().reverse().find(e => e.productId === pp.id && e.shop); if (last) $('#fShop').value = last.shop; }
-        updateSug(); if (pp.nutri) draw(); 
-      });
-    };
-
-    const autoFill = name => { 
-      const nm = name.trim(), sp = nm && S.products.find(x => x.typeId === typeId && Foods.norm(x.name) === Foods.norm(nm));
-      const f = nm && Foods.find(nm, t.categories.map(c => c.name)), fCat = f && t.categories.find(c => c.name === f.cat)?.id;
-      const catId = sp?.catId || fCat, n = sp?.nutri || f?.n;
-      if (!catTouched && catId && t.categories.some(c => c.id === catId)) $('#fC').value = catId;
-      
-      if (sp?.defaultShop) $('#fShop').value = sp.defaultShop;
-      else if (nm) {
-        const found = S.products.find(x => Foods.norm(x.name) === Foods.norm(nm));
-        const last = S.entries.slice().reverse().find(e => found && e.productId === found.id && e.shop);
-        if (last) $('#fShop').value = last.shop;
-      }
-
-      if (!food) return; const set = (id, v) => $(id).value = v ?? '';
-      if (n && !nutTouched) { const v = n.values; $('#nB').value = n.basis; set('#nK', v.kcal); set('#nP', v.protein); set('#nT', v.fat); set('#nW', v.carbs); set('#nF', v.fibre); autoNut = true; autoSrc = sp?.nutri ? 'saved' : 'table'; }
-      else if (!n && autoNut && !nutTouched) { ['#nK', '#nP', '#nT', '#nW', '#nF'].forEach(i => set(i, '')); autoNut = false; }
-      $('#auto').textContent = !autoNut ? '' : autoSrc === 'saved' ? 'Wartości z zapisanego produktu.' : 'Wartości uzupełnione automatycznie z wbudowanej tabeli.'; live(); 
-    };
-
-    $('#fN').oninput = e => { 
-      const q = e.target.value.trim().toLowerCase(); 
-      if (!en) pid = null; 
-      if (!en && !pid) autoFill(e.target.value); 
-      const m = q ? S.products.filter(x => x.typeId === typeId && x.name.toLowerCase().includes(q)).sort((a, b) => col.compare(a.name, b.name)).slice(0, 6) : [];
-      if (!q) updateSug();
-      else {
-        $('#sug').innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)} · ${esc(catName(t, x.catId))}</button>`).join(''); 
-        $('#sug').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); $('#fN').value = pp.name; $('#fC').value = pp.catId; if (pp.defaultShop) $('#fShop').value = pp.defaultShop; $('#sug').innerHTML = ''; if (pp.nutri) draw(); }); 
-      }
-    };
-
-    if (!en) updateSug();
-
-    $('#cl').onclick = () => { vibrate(); modal(''); };
-    if (en) $('#rm').onclick = () => { vibrate(); removeEntry(en.id); modal(''); };
-    
-    $('#ok').onclick = () => { 
-      vibrate();
-      const name = $('#fN').value.trim(), qty = num($('#fQ').value), shop = $('#fShop').value.trim();
-      if (!name) return $('#err').textContent = 'Podaj nazwę produktu.'; 
-      if (!(qty > 0)) return $('#err').textContent = 'Ilość musi być większa od zera.';
-      let p = pid && prod(pid); 
-      if (!p) p = S.products.find(x => x.typeId === typeId && col.compare(x.name, name) === 0);
-      if (!p) { p = { id: uid(), typeId, name }; S.products.push(p); } 
-      p.name = name; p.catId = $('#fC').value; p.defaultShop = shop; p.usedCount = (p.usedCount || 0) + 1;
-      if (food) p.nutri = nut();
-      if (!en && S.entries.some(x => x.sessionId === S.cur && x.productId === p.id && x.status !== 'bought') && !confirm('Ten produkt jest już na liście. Dodać mimo to?')) return;
-      const f = { productId: p.id, typeId, qty, unit: $('#fU').value, shop, note: $('#fNote').value.trim(), status: $('#fS').value, added: en?.added || Date.now() };
-      if (en) Object.assign(en, f); else S.entries.push({ id: uid(), sessionId: S.cur, ...f }); 
-      modal(''); save(); 
-    }; 
-  };
-  draw();
-}
-
-function settings() {
-  const hist = S.sessions.filter(s => s.archived).length;
-  modal(`<h3 style="margin:0">Ustawienia</h3>
-  <button class="btn" id="share">Udostępnij listę tekstowo</button>
-  <button class="btn s" id="end">Zakończ zakupy / nowa lista</button>
-  <button class="btn s" id="types">Rodzaje list i kategorie</button>
-  <button class="btn s" id="exp">Eksportuj kopię zapasową (JSON)</button>
-  <label class="btn s" style="display:flex;align-items:center;justify-content:center">Przywróć z kopii<input id="imp" type="file" accept=".json,application/json" hidden></label>
-  <p style="color:var(--mut);font-size:14px">Dane są tylko na tym urządzeniu. Zarchiwizowane sesje: ${hist}.</p><button class="btn s" id="cl">Zamknij</button>`);
-  
-  $('#cl').onclick = () => { vibrate(); modal(''); }; 
-  $('#types').onclick = () => { vibrate(); typesEditor(); }; 
-  $('#end').onclick = () => { vibrate(); endSession(); };
-  
-  $('#share').onclick = async () => {
-    vibrate();
-    const list = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy');
-    if (!list.length) { alert('Brak produktów do kupienia na liście!'); return; }
-    const groups = {};
-    list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = t.name + ' › ' + catName(t, p.catId); (groups[key] ||= []).push(`- ${p.name} (${e.qty} ${e.unit})${e.shop ? ' [🏪 ' + e.shop + ']' : ''}${e.note ? ' [' + e.note + ']' : ''}`); });
-    let text = '🛒 Lista zakupów:\n\n';
-    for (const [k, items] of Object.entries(groups)) text += `*${k}*:\n` + items.join('\n') + '\n\n';
-    if (navigator.share) { try { await navigator.share({ title: 'Lista zakupów', text }); } catch {} }
-    else { navigator.clipboard.writeText(text); alert('Skopiowano listę do schowka!'); }
-  };
-
-  $('#exp').onclick = () => { vibrate(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); a.download = 'zakupy-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
-  $('#imp').onchange = async e => { vibrate(); try { const d = JSON.parse(await e.target.files[0].text()); if (!d.types || !d.products || !d.entries || !d.sessions) throw 0;
-    if (!confirm('Przywrócenie ZASTĄPI obecne dane. Kontynuować?')) return; S = mig(d); view = 'all'; modal(''); save(); } catch { alert('Niepoprawna kopia zapasowa.'); } };
-}
-
-function endSession() {
-  const na = S.entries.filter(e => e.sessionId === S.cur && e.status === 'na').length, buy = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy').length;
-  modal(`<h3 style="margin:0">Zakończ zakupy</h3><p>Niedostępne: <b>${na}</b>, do kupienia: <b>${buy}</b>.</p>
-  <label><input type="checkbox" id="cn" checked style="width:auto;min-height:0"> Przenieś niedostępne do nowej listy</label>
-  <label><input type="checkbox" id="cb" checked style="width:auto;min-height:0"> Przenieś też „do kupienia”</label>
-  <button class="btn" id="go">Zarchiwizuj i utwórz nową</button><button class="btn s" id="cl">Anuluj</button>`);
-  $('#cl').onclick = () => { vibrate(); modal(''); }; 
-  $('#go').onclick = () => { 
-    vibrate();
-    const n = { id: uid(), name: 'Zakupy ' + new Date().toLocaleDateString('pl'), created: Date.now(), archived: false }, cn = $('#cn').checked, cb = $('#cb').checked;
-    const carry = S.entries.filter(e => e.sessionId === S.cur && ((cn && e.status === 'na') || (cb && e.status === 'buy')));
-    carry.forEach(e => { if (!S.entries.some(x => x.sessionId === n.id && x.productId === e.productId)) S.entries.push({ ...e, id: uid(), sessionId: n.id, status: 'buy' }); });
-    S.sessions.find(s => s.id === S.cur).archived = true; S.sessions.push(n); S.cur = n.id; modal(''); save(); 
-  };
-}
-
-function typesEditor() {
-  modal(`<h3 style="margin:0">Rodzaje list</h3>` + S.types.map(t => `<div class="item" style="margin:6px 0"><div class="t"><b>${ic(t.icon, 18)} ${esc(t.name)}</b><small>${t.categories.length} kategorii</small></div><button class="chip f" data-et="${t.id}">Edytuj</button></div>`).join('') +
-    `<button class="btn" id="nt">Nowy rodzaj listy</button><button class="btn s" id="cl">Wróć</button>`);
-  $('#cl').onclick = () => { vibrate(); settings(); }; 
-  $('#nt').onclick = () => { vibrate(); editType(null); }; 
-  document.querySelectorAll('[data-et]').forEach(b => b.onclick = () => { vibrate(); editType(b.dataset.et); });
-}
-
-function editType(id) {
-  const t = id ? type(id) : { name: '', color: '#FFB5CC', icon: 'bag', food: false, categories: [] };
-  modal(`<h3 style="margin:0">${id ? 'Edytuj listę' : 'Nowa lista'}</h3><label>Nazwa</label><input id="tn" value="${esc(t.name)}"><div class="g2"><div><label>Ikona</label><select id="ti">${opts(ICON_KEYS.map(k => [k, ICONL[k]]), t.icon)}</select></div><div><label>Kolor</label><input id="tc" type="color" value="${t.color}"></div></div>
-  <label><input type="checkbox" id="tf" ${t.food ? 'checked' : ''} style="width:auto;min-height:0"> Produkty spożywcze (wartości odżywcze)</label>
-  <label>Kategorie (jedna w wierszu)</label><textarea id="tk" rows="8">${esc(t.categories.map(c => c.name).join('\n'))}</textarea><div class="err" id="err"></div>
-  <button class="btn" id="ok">Zapisz</button>${id ? '<button class="btn d" id="del">Usuń listę</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
-  $('#cl').onclick = () => { vibrate(); typesEditor(); };
-  $('#ok').onclick = () => { 
-    vibrate();
-    const name = $('#tn'].value.trim(); if (!name) return $('#err').textContent = 'Podaj nazwę listy.';
-    const names = $('#tk'].value.split('\n').map(x => x.trim()).filter(Boolean), old = id ? t.categories : [];
-    const cats = names.map((n, i) => ({ id: old[i]?.id || uid(), name: n }));
-    if (id) { const gone = old.slice(cats.length); if (gone.some(c => S.products.some(p => p.catId === c.id)) && !confirm('Usuwane kategorie mają produkty — trafią do „Bez kategorii”. Kontynuować?')) return; gone.forEach(c => S.products.forEach(p => { if (p.catId === c.id) p.catId = null; })); }
-    Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc').value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); 
-  };
-  if (id) $('#del').onclick = () => { 
-    vibrate();
-    if (!confirm(`Usunąć listę „${t.name}” wraz z produktami?`)) return;
-    S.types = S.types.filter(x => x.id !== id); S.products = S.products.filter(p => p.typeId !== id); S.entries = S.entries.filter(e => e.typeId !== id); if (view === id) view = 'all'; save().then(typesEditor); 
-  };
-}
-
-(async () => { 
-  try { S = await DB.get(); if (!S) { S = seed(); await DB.put(S); } } catch { S = seed(); }
-  mig(S); 
-  try { await DB.put(JSON.parse(JSON.stringify(S))); } catch {}
-  if (navigator.storage?.persist) navigator.storage.persist(); 
-  render();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); 
-})();
+        vibrate(); pid = b.dataset.p; const pp = prod
