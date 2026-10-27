@@ -7,7 +7,7 @@ const ICONS = { cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="
   yarn: '<circle cx="12" cy="12" r="8"/><path d="M5 9c5 2 9 2 14 0M5 15c5-2 9-2 14 0M12 4c-3 5-3 11 0 16"/>', pencil: '<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>', bag: '<path d="M6 8h12l1 12H5zM9 8a3 3 0 016 0"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>', home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>', gift: '<path d="M4 11h16v9H4zM3 8h18v3H3zM12 8v12M12 8c-3 0-4-4-1-4 2 0 1 4 1 4zM12 8c3 0 4-4 1-4-2 0-1 4-1 4z"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', basket: '<path d="M3 10h18l-2 10H5zM8 10l3-6M16 10l-3-6"/>',
-  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>' };
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', sliders: '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>' };
 const ICONL = { leaf: 'Liść', bottle: 'Butelka', yarn: 'Włóczka', pencil: 'Ołówek', bag: 'Torba', basket: 'Koszyk', heart: 'Serce', home: 'Dom', gift: 'Prezent', star: 'Gwiazdka' }, ICON_KEYS = Object.keys(ICONL);
 const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ICONS.bag}</svg>`;
 const onC = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#2E2A47'; const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255,
@@ -62,7 +62,7 @@ async function save() {
 
 const type = id => S.types.find(t => t.id === id), prod = id => S.products.find(p => p.id === id);
 const catName = (t, id) => (t?.categories.find(c => c.id === id)?.name) || 'Bez kategorii';
-function modal(html) { $('#modal').innerHTML = html ? `<div class="sheet" id="sh"><div>${html}</div></div>` : ''; const sh = $('#sh'); if (sh) sh.onclick = e => { if (e.target === sh) modal(''); }; }
+function modal(html) { const m = $('#modal'); m.innerHTML = html ? `<div class="sheet" id="sh"><div>${html}</div></div>` : ''; const sh = $('#sh'); if (sh) sh.onclick = e => { if (e.target === sh) modal(''); }; }
 const fmt = n => n == null ? '?' : String(Math.round(n * 100) / 100).replace('.', ',');
 const nutriText = r => `${fmt(r.kcal)}\u00A0kcal · B\u00A0${fmt(r.protein)}\u00A0g · T\u00A0${fmt(r.fat)}\u00A0g · W\u00A0${fmt(r.carbs)}\u00A0g · bł.\u00A0${fmt(r.fibre)}\u00A0g`;
 
@@ -88,9 +88,10 @@ function removeEntry(id) {
 
 function showToast() {
   const toast = $('#toast');
+  toast.style.display = 'flex';
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.classList.remove('show'); lastDeleted = null; }, 4000);
+  toastTimer = setTimeout(() => { toast.classList.remove('show'); toast.style.display = 'none'; lastDeleted = null; }, 4000);
 }
 
 $('#undoBtn').onclick = () => {
@@ -98,7 +99,9 @@ $('#undoBtn').onclick = () => {
   vibrate();
   S.entries.splice(lastDeleted.index, 0, lastDeleted.entry);
   lastDeleted = null;
-  $('#toast').classList.remove('show');
+  const toast = $('#toast');
+  toast.classList.remove('show');
+  toast.style.display = 'none';
   if (toastTimer) clearTimeout(toastTimer);
   save();
 };
@@ -127,8 +130,10 @@ function render() {
     <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
     <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.shop ? ' · ' + ic('cart', 14) + ' ' + esc(e.shop) : ''}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div>
     <div class="acts">
-      <div class="qty-ctrls"><button class="qty-btn" data-minus="${e.id}">-</button><button class="qty-btn" data-plus="${e.id}">+</button></div>
-      <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button><button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
+      <button class="ib" data-minus="${e.id}" aria-label="Zmniejsz ilość">${ic('minus', 18)}</button>
+      <button class="ib" data-plus="${e.id}" aria-label="Zwiększ ilość">${ic('plus', 18)}</button>
+      <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button>
+      <button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
     </div></div></div>`).join('')).join('');
 
   initSwipeGestures();
@@ -173,7 +178,7 @@ function initSwipeGestures() {
   document.querySelectorAll('.item').forEach(item => {
     let startX = 0, currentX = 0, isSwiping = false;
     const id = item.dataset.itemId;
-    if (!id) return; // pasek „Razem” nie jest pozycją listy
+    if (!id) return;
 
     item.addEventListener('touchstart', e => {
       startX = e.touches[0].clientX;
@@ -258,7 +263,6 @@ function entryForm(id) {
     $('#shopList').innerHTML = [...new Set(S.entries.map(e => e.shop).concat(S.products.map(p => p.defaultShop)).filter(Boolean))].map(s => `<option value="${esc(s)}">`).join('');
 
     const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
-    // Wartości odżywcze zapisują się tylko, gdy pole „Dodaj wartości odżywcze” jest zaznaczone
     const nut = () => { if (!food || !$('#showNut').checked) return null; const v = { kcal: num($('#nK').value), protein: num($('#nP').value), fat: num($('#nT').value), carbs: num($('#nW').value), fibre: num($('#nF').value) }; if (Object.values(v).every(x => x == null)) return null; return { basis: $('#nB').value, values: { ...(p?.nutri?.values || {}), ...v } }; };
     const live = () => { if (!food) return; const r = Nutrition.calc(nut(), num($('#fQ').value), $('#fU').value); $('#live').textContent = !nut() ? '' : r ? 'Razem: ' + nutriText(r) : 'Brak przelicznika dla tej jednostki'; };
     
