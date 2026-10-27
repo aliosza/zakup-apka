@@ -144,7 +144,7 @@ function openFilterModal() {
   <label>Rodzaj listy</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
     <button class="chip f ${view === 'all' ? 'on' : ''}" style="--c:#D4C1FF;--on:${onC('#D4C1FF')}" data-v="all">Wszystko</button>
-    ${S.types.map(t => `<button class="chip f ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${esc(t.name)}</button>`).join('')}
+    ${S.types.map(t => `<button class="chip f ${view === t.id ? 'on' : ''}" style="--c:${t.color};--on:${onC(t.color)}" data-v="${t.id}">${ic(t.icon, 16)} ${esc(t.name)}</button>`).join('')}
   </div>
 
   <label>Status</label>
@@ -167,6 +167,7 @@ function openFilterModal() {
 }
 
 $('#filterToggle').onclick = openFilterModal;
+$('#filterToggle').innerHTML = `${ic('sliders', 20)} Filtry`;
 
 function initSwipeGestures() {
   document.querySelectorAll('.item').forEach(item => {
@@ -405,8 +406,8 @@ function editType(id) {
   $('#cl').onclick = () => { vibrate(); typesEditor(); };
   $('#ok').onclick = () => { 
     vibrate();
-    const name = $('#tn').value.trim(); if (!name) return $('#err').textContent = 'Podaj nazwę listy.';
-    const names = $('#tk').value.split('\n').map(x => x.trim()).filter(Boolean), old = id ? t.categories : [];
+    const name = $('#tn'].value.trim(); if (!name) return $('#err').textContent = 'Podaj nazwę listy.';
+    const names = $('#tk'].value.split('\n').map(x => x.trim()).filter(Boolean), old = id ? t.categories : [];
     const cats = names.map((n, i) => ({ id: old[i]?.id || uid(), name: n }));
     if (id) { const gone = old.slice(cats.length); if (gone.some(c => S.products.some(p => p.catId === c.id)) && !confirm('Usuwane kategorie mają produkty — trafią do „Bez kategorii”. Kontynuować?')) return; gone.forEach(c => S.products.forEach(p => { if (p.catId === c.id) p.catId = null; })); }
     Object.assign(t, { name, icon: $('#ti').value || 'bag', color: $('#tc').value, food: $('#tf').checked, categories: cats }); if (!id) { t.id = uid(); S.types.push(t); } save().then(typesEditor); 
