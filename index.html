@@ -17,13 +17,13 @@ header{position:sticky;top:0;background:var(--bg);z-index:5;padding:10px 12px 8p
 .row{display:flex;gap:8px;align-items:center}.scroll{display:flex;gap:8px;overflow-x:auto;padding:6px 0;scrollbar-width:none}
 .ttl{font-size:30px;font-weight:700;letter-spacing:-.01em}h3{font-size:22px;font-weight:700}svg{flex:none;display:block}
 
-button, .chip, .btn, .fab, .gear, .ib, .st, .qty-btn {
+button, .chip, .btn, .fab, .gear, .ib, .st {
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, background-color 0.15s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
-button:active, .chip:active, .btn:active, .fab:active, .gear:active, .ib:active, .st:active, .qty-btn:active {
+button:active, .chip:active, .btn:active, .fab:active, .gear:active, .ib:active, .st:active {
   transform: scale(0.92) translateY(1px);
   opacity: 0.8;
 }
@@ -51,8 +51,6 @@ h2{margin:20px 12px 8px}.pill{display:inline-flex;align-items:center;gap:7px;pad
 @keyframes drawIcon { to { stroke-dashoffset: 0; } }
 
 .acts{flex:none;display:flex;gap:4px;align-items:center}.ib{width:40px;height:40px;border-radius:20px;border:0;background:var(--line);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}.ib.del{color:#D63A5C}
-.qty-ctrls{display:flex;align-items:center;gap:2px;background:var(--line);border-radius:12px;padding:2px;margin-right:4px}
-.qty-btn{width:28px;height:28px;border-radius:10px;border:0;background:var(--card);color:var(--ink);font-weight:bold;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .t{flex:1;min-width:0}.t b{display:block;font-weight:700}.t small{color:var(--mut);display:block}.p .t b{text-decoration:line-through;color:var(--mut)}
 .nu{font-size:13px;font-weight:600;color:var(--vio)}
 
