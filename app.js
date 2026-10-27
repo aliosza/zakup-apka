@@ -125,7 +125,7 @@ function render() {
     groups[k].items.sort((a, b) => sortMode === 'alpha' ? col.compare(prod(a.productId).name, prod(b.productId).name) : (a.added || 0) - (b.added || 0))
     .map(e => `<div class="item-wrapper"><div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color}" data-item-id="${e.id}">
     <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
-    <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.shop ? ' · 🏪 ' + esc(e.shop) : ''}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div>
+    <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.shop ? ' · ' + ic('cart', 14) + ' ' + esc(e.shop) : ''}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div>
     <div class="acts">
       <div class="qty-ctrls"><button class="qty-btn" data-minus="${e.id}">-</button><button class="qty-btn" data-plus="${e.id}">+</button></div>
       <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button><button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
@@ -364,7 +364,7 @@ function settings() {
     const list = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy');
     if (!list.length) { alert('Brak produktów do kupienia na liście!'); return; }
     const groups = {};
-    list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = t.name + ' › ' + catName(t, p.catId); (groups[key] ||= []).push(`- ${p.name} (${e.qty} ${e.unit})${e.shop ? ' [🏪 ' + e.shop + ']' : ''}${e.note ? ' [' + e.note + ']' : ''}`); });
+    list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = t.name + ' › ' + catName(t, p.catId); (groups[key] ||= []).push(`- ${p.name} (${e.qty} ${e.unit})${e.shop ? ' [' + e.shop + ']' : ''}${e.note ? ' [' + e.note + ']' : ''}`); });
     let text = '🛒 Lista zakupów:\n\n';
     for (const [k, items] of Object.entries(groups)) text += `*${k}*:\n` + items.join('\n') + '\n\n';
     if (navigator.share) { try { await navigator.share({ title: 'Lista zakupów', text }); } catch {} }
