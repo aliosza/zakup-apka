@@ -38,7 +38,7 @@ function mig(s) {
   return s; 
 }
 
-const UNITS = ['szt', 'opak.', 'g', 'kg', 'ml', 'l'], ST = ['buy', 'bought', 'na'], STL = { buy: 'Do kupienia', bought: 'Kupione', na: 'Niedostępne' }, STI = { buy: '', bought: ic('check', 24), na: ic('x', 22) };
+const UNITS = ['szt', 'opak.', 'g', 'kg', 'ml', 'l'], ST = ['buy', 'bought', 'na'], STL = { buy: 'Do kupienia', bought: 'Kupione', na: 'Niedostępne' }, STI = { buy: '', bought: ic('check', 20), na: ic('x', 18) };
 const MEALS = ['Śniadanie', 'Drugie śniadanie', 'Obiad', 'Kolacja', 'Przekąski'];
 const mk = (name, color, icon, food, cats) => ({ id: uid(), name, color, icon, food, categories: cats.map(n => ({ id: uid(), name: n })) });
 function seed() {
@@ -68,14 +68,6 @@ const type = id => S.types.find(t => t.id === id), prod = id => S.products.find(
 const catName = (t, id) => (t?.categories.find(c => c.id === id)?.name) || 'Bez kategorii';
 function modal(html) { const m = $('#modal'); m.innerHTML = html ? `<div class="sheet" id="sh"><div>${html}</div></div>` : ''; const sh = $('#sh'); if (sh) sh.onclick = e => { if (e.target === sh) modal(''); }; }
 const fmt = n => n == null ? '?' : String(Math.round(n * 100) / 100).replace('.', ',');
-
-function nutriLine(e) { 
-  const p = prod(e.productId); 
-  if (!p?.nutri) return ''; 
-  const r = Nutrition.calc(p.nutri, e.qty, e.unit);
-  if (!r) return `<span class="nu">Wartości odżywcze: brak przelicznika dla „${esc(e.unit)}”</span>`;
-  return `<span class="nu">${fmt(r.kcal)} kcal</span>`; 
-}
 
 function removeEntry(id) {
   if (appMode === 'shopping') {
@@ -186,14 +178,16 @@ function renderShopping() {
   
   $('#main').innerHTML = Object.keys(groups).sort(col.compare).map(k => `<h2><span class="pill" style="--c:${groups[k].t.color};--on:${onC(groups[k].t.color)}">${ic(groups[k].t.icon, 16)}${esc(k)}</span></h2>` +
     groups[k].items.sort((a, b) => sortMode === 'alpha' ? col.compare(prod(a.productId).name, prod(b.productId).name) : (a.added || 0) - (b.added || 0))
-    .map(e => `<div class="item-wrapper"><div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color}" data-item-id="${e.id}">
-    <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
-    <div class="t" data-e="${e.id}"><b>${esc(prod(e.productId).name)}</b><small>${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.shop ? ' · ' + ic('cart', 14) + ' ' + esc(e.shop) : ''}${e.note ? ' · ' + esc(e.note) : ''} · ${STL[e.status]}</small>${nutriLine(e)}</div>
+    .map(e => `<div class="item-wrapper"><div class="item ${e.status === 'bought' ? 'p' : ''}" style="--c:${type(e.typeId).color};min-height:46px;padding:4px 8px 4px 6px" data-item-id="${e.id}">
+    <button class="st ${e.status === 'bought' ? 'p' : e.status === 'na' ? 'n' : ''}" style="width:28px;height:28px" data-s="${e.id}" aria-label="${STL[e.status]}">${STI[e.status]}</button>
+    <div class="t" data-e="${e.id}" style="display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+      <b style="font-size:15px;white-space:nowrap">${esc(prod(e.productId).name)}</b>
+      <small style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· ${esc(String(e.qty).replace('.', ','))} ${esc(e.unit)}${e.shop ? ' · ' + esc(e.shop) : ''}${e.note ? ' · ' + esc(e.note) : ''}</small>
+    </div>
     <div class="acts">
-      <button class="ib" data-minus="${e.id}" aria-label="Zmniejsz ilość">${ic('minus', 18)}</button>
-      <button class="ib" data-plus="${e.id}" aria-label="Zwiększ ilość">${ic('plus', 18)}</button>
-      <button class="ib" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 18)}</button>
-      <button class="ib del" data-d="${e.id}" aria-label="Usuń z listy">${ic('trash', 18)}</button>
+      <button class="ib" style="width:32px;height:32px" data-minus="${e.id}" aria-label="Zmniejsz ilość">${ic('minus', 16)}</button>
+      <button class="ib" style="width:32px;height:32px" data-plus="${e.id}" aria-label="Zwiększ ilość">${ic('plus', 16)}</button>
+      <button class="ib" style="width:32px;height:32px" data-e="${e.id}" aria-label="Edytuj">${ic('pencil', 16)}</button>
     </div></div></div>`).join('')).join('');
 }
 
@@ -234,15 +228,13 @@ function renderTracker() {
       if (items.length) {
         const mealKcal = items.reduce((s, i) => s + (i.r?.kcal || 0), 0);
         html += `<h2><span class="pill" style="--c:#D4C1FF;--on:#2E2A47">${esc(meal)} · ${fmt(mealKcal)} kcal</span></h2>` +
-          items.map(i => `<div class="item-wrapper"><div class="item" style="--c:#CDB9FF" data-item-id="${i.log.id}">
-            <div class="t" data-log-edit="${i.log.id}">
-              <b>${esc(i.p?.name || 'Produkt')}</b>
-              <small>${esc(String(i.log.qty).replace('.', ','))} ${esc(i.log.unit)}</small>
-              <span class="nu">${i.r ? fmt(i.r.kcal) + ' kcal · B ' + fmt(i.r.protein) + 'g · T ' + fmt(i.r.fat) + 'g · W ' + fmt(i.r.carbs) + 'g' : 'Brak przelicznika'}</span>
+          items.map(i => `<div class="item-wrapper"><div class="item" style="--c:#CDB9FF;min-height:46px;padding:4px 8px" data-item-id="${i.log.id}">
+            <div class="t" data-log-edit="${i.log.id}" style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div><b>${esc(i.p?.name || 'Produkt')}</b> <small>· ${esc(String(i.log.qty).replace('.', ','))} ${esc(i.log.unit)}</small></div>
+              <span class="nu" style="font-size:13px">${i.r ? fmt(i.r.kcal) + ' kcal' : ''}</span>
             </div>
             <div class="acts">
-              <button class="ib" data-log-edit="${i.log.id}" aria-label="Edytuj">${ic('pencil', 18)}</button>
-              <button class="ib del" data-d="${i.log.id}" aria-label="Usuń z dziennika">${ic('trash', 18)}</button>
+              <button class="ib" style="width:32px;height:32px" data-log-edit="${i.log.id}" aria-label="Edytuj">${ic('pencil', 16)}</button>
             </div>
           </div></div>`).join('');
       }
