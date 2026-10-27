@@ -55,7 +55,7 @@ const DB = { open: () => new Promise((ok, no) => { const r = indexedDB.open('zak
   async get() { const d = await this.open(); return new Promise((ok, no) => { const r = d.transaction('kv').objectStore('kv').get('state'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); },
   async put(v) { const d = await this.open(); return new Promise((ok, no) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'state'); t.oncomplete = ok; t.onerror = () => no(t.error); }); } };
 
-let S, appMode = 'shopping', view = 'all', filter = 'all', shopFilter = 'all', query = '', sortMode = 'alpha';
+let S, appMode = 'shopping', view = 'all', filter = 'buy', shopFilter = 'all', query = '', sortMode = 'alpha';
 let logDate = new Date().toISOString().slice(0, 10);
 let lastDeleted = null, toastTimer = null;
 
@@ -124,14 +124,14 @@ function switchMode(newMode) {
 
 function renderModeHeader() {
   $('#btnShopMode').innerHTML = `${ic('cart', 16)} Zakupy`;
-  $('#btnTrackMode').innerHTML = `${ic('flame', 16)} Dzisiaj`;
+  $('#btnTrackMode').innerHTML = `${ic('flame', 16)} Kalorie`;
   
   if (appMode === 'shopping') {
     $('#btnShopMode').classList.add('active');
     $('#btnTrackMode').classList.remove('active');
     $('#subHeader').innerHTML = `<input id="q" type="search" placeholder="Szukaj na liście…" value="${esc(query)}" style="flex:1">
       <button class="filter-btn" id="filterToggle" aria-label="Filtry">${ic('sliders', 20)} Filtry</button>
-      <select id="sortMode" aria-label="Sortowanie" style="width:auto;min-height:42px;font-size:14px;padding:4px 8px">
+      <select id="sortMode" aria-label="Sortowanie" style="width:auto">
         <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>Alfabetycznie</option>
         <option value="added" ${sortMode === 'added' ? 'selected' : ''}>Kolejność dodania</option>
       </select>`;
@@ -179,7 +179,7 @@ function renderShopping() {
     list = list.filter(e => prod(e.productId).name.toLowerCase().includes(qLower));
   }
   
-  if (!list.length) { $('#main').innerHTML = `<div class="empty">Brak produktów.<br>Dotknij „+”, aby dodać pierwszy do zakupów.</div>`; return; }
+  if (!list.length) { $('#main').innerHTML = `<div class="empty">Brak produktów do kupienia.<br>Dotknij „+”, aby dodać nowy produkt.</div>`; return; }
   
   const groups = {}; 
   list.forEach(e => { const t = type(e.typeId), p = prod(e.productId), key = view === 'all' ? t.name + ' › ' + catName(t, p.catId) : catName(t, p.catId); (groups[key] ||= { t, items: [] }).items.push(e); });
@@ -536,7 +536,7 @@ function settings() {
   <label>Aktualny tryb aplikacji</label>
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn ${appMode === 'shopping' ? '' : 's'}" id="setShop" style="flex:1">Lista zakupów</button>
-    <button class="btn ${appMode === 'tracker' ? '' : 's'}" id="setTrack" style="flex:1">Dziennik kalorii</button>
+    <button class="btn ${appMode === 'tracker' ? '' : 's'}" id="setTrack" style="flex:1">Kalorie</button>
   </div>
   <button class="btn s" id="share">Udostępnij listę tekstowo</button>
   <button class="btn s" id="end">Zakończ zakupy / nowa lista</button>
