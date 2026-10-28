@@ -72,7 +72,7 @@ function modal(html) {
   const m = $('#modal'); 
   if (!m) return; 
   m.innerHTML = html ? `<div class="sheet" id="sh"><div style="position:relative">
-    <button class="ib" id="modalCloseX" style="position:absolute;top:0;right:0;width:36px;height:36px;z-index:5;background:transparent" aria-label="Zamknij">${ic('x', 20)}</button>
+    <button class="ib" id="modalCloseX" style="position:absolute;top:8px;right:8px;width:36px;height:36px;z-index:5;background:transparent" aria-label="Zamknij">${ic('x', 20)}</button>
     <div>${html}</div>
   </div></div>` : ''; 
   
@@ -249,7 +249,7 @@ function showShoppingItemDetail(entryId) {
   const t = type(en.typeId);
   const r = p?.nutri ? Nutrition.calc(p.nutri, en.qty, en.unit) : null;
 
-  modal(`<h3 style="margin:0;padding-right:36px">${esc(p?.name || 'Produkt')}</h3>
+  modal(`<h3 style="margin:0;padding-right:52px">${esc(p?.name || 'Produkt')}</h3>
   <small style="color:var(--mut);font-weight:700">${esc(t?.name || '')} › ${esc(catName(t, p?.catId))}</small>
   
   <div style="margin-top:14px;background:var(--card);padding:12px 14px;border-radius:16px;border:1.5px solid var(--line);display:flex;justify-content:space-between;align-items:center">
@@ -394,7 +394,7 @@ function showLogDetail(logId) {
       }).join('') + `</div>`;
   }
 
-  modal(`<h3 style="margin:0;padding-right:36px">${esc(name)}</h3>
+  modal(`<h3 style="margin:0;padding-right:52px">${esc(name)}</h3>
   <small style="color:var(--mut);font-weight:700">${esc(lg.meal)} · ${lg.date}</small>
   
   <div style="margin-top:16px;text-align:center;background:var(--card);padding:14px;border-radius:18px;border:1.5px solid var(--line)">
@@ -424,7 +424,7 @@ function openFilterModal() {
   const sessionEntries = S.entries.filter(e => e.sessionId === S.cur);
   const shops = [...new Set(sessionEntries.map(e => e.shop).filter(Boolean))].sort(col.compare);
 
-  modal(`<h3 style="margin:0;padding-right:36px">Filtry i widok</h3>
+  modal(`<h3 style="margin:0;padding-right:52px">Filtry i widok</h3>
   
   <label>Rodzaj listy</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
@@ -559,7 +559,7 @@ function entryForm(id) {
   const en = id && S.entries.find(x => x.id === id), p0 = en && prod(en.productId);
   let catTouched = false, nutTouched = false, autoNut = false, autoSrc = '', typeId = en ? en.typeId : (view !== 'all' ? view : S.types[0].id), pid = p0 ? p0.id : null;
   const draw = () => { const t = type(typeId), p = pid && prod(pid), food = t.food;
-    modal(`<h3 style="margin:0;padding-right:36px">${en ? 'Edytuj pozycję' : 'Dodaj produkt do zakupów'}</h3>
+    modal(`<h3 style="margin:0;padding-right:52px">${en ? 'Edytuj pozycję' : 'Dodaj produkt do zakupów'}</h3>
     <label>Lista</label><select id="fT" ${en ? 'disabled' : ''}>${opts(S.types.map(t => [t.id, t.name]), typeId)}</select>
     <label>Nazwa produktu</label><input id="fN" value="${esc(p?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div><div class="err" id="err"></div>
     <label>Kategoria</label><select id="fC">${opts(t.categories.map(c => [c.id, c.name]), p?.catId)}</select>
@@ -692,9 +692,10 @@ function trackerForm(logId) {
   let currentName = lg?.name || '';
   let singleQty = lg?.qty || 100;
   let singleUnit = lg?.unit || 'g';
+  let getPidFn = () => lg?.productId || null;
 
   const drawForm = () => {
-    modal(`<h3 style="margin:0;padding-right:36px">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
+    modal(`<h3 style="margin:0;padding-right:52px">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
     <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), currentMeal)}</select>
     
     <div style="display:flex;gap:4px;margin-top:10px;margin-bottom:12px;background:var(--line);padding:3px;border-radius:16px">
@@ -738,6 +739,8 @@ function trackerForm(logId) {
       <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${singleQty}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), singleUnit)}</select></div></div>`;
       
       let pid = p0 ? p0.id : null;
+      getPidFn = () => pid;
+
       const updateSug = () => {
         const sug = $('#sug'); if (!sug) return;
         const recents = S.products.filter(x => x.nutri).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
@@ -761,7 +764,6 @@ function trackerForm(logId) {
         };
       }
       if (!lg && !currentName) updateSug();
-      cnt.dataset.getPid = () => pid;
     } else if (activeTab === 'multi') {
       cnt.innerHTML = `<label>Nazwa posiłku (np. Koktajl proteinowy)</label><input id="tName" value="${esc(currentName)}" placeholder="np. Owsianka, Omlet" autocomplete="off">
       <label>Dodane składniki:</label>
@@ -798,7 +800,7 @@ function trackerForm(logId) {
         const itToEdit = editIdx !== null ? itemsList[editIdx] : null;
         const editP = itToEdit?.productId ? prod(itToEdit.productId) : null;
         const cn = itToEdit?.customNutri || {};
-        modal(`<h3 style="margin:0;padding-right:36px">${itToEdit ? 'Edytuj składnik' : 'Dodaj składnik'}</h3>
+        modal(`<h3 style="margin:0;padding-right:52px">${itToEdit ? 'Edytuj składnik' : 'Dodaj składnik'}</h3>
         <label>Nazwa składnika</label><input id="itN" value="${esc(editP?.name || itToEdit?.name || '')}" autocomplete="off"><div class="sug" id="itSug"></div>
         <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="${itToEdit ? itToEdit.qty : 100}"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), itToEdit?.unit || 'g')}</select></div></div>
         
@@ -912,8 +914,7 @@ function trackerForm(logId) {
           if (!name) { if (err) err.textContent = 'Podaj nazwę produktu.'; return; }
           if (!(qty > 0)) { if (err) err.textContent = 'Ilość musi być większa od zera.'; return; }
           
-          let getPid = cnt.dataset.getPid;
-          let pid = getPid ? getPid() : null;
+          let pid = getPidFn();
           let p = pid ? prod(pid) : S.products.find(x => col.compare(x.name, name) === 0);
           if (!p) {
             const f = Foods.find(name, foodType.categories.map(c => c.name));
@@ -961,7 +962,7 @@ function trackerForm(logId) {
 
 function settings() {
   const hist = S.sessions.filter(s => s.archived).length;
-  modal(`<h3 style="margin:0;padding-right:36px">Ustawienia</h3>
+  modal(`<h3 style="margin:0;padding-right:52px">Ustawienia</h3>
   <label>Aktualny tryb aplikacji</label>
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn ${appMode === 'shopping' ? '' : 's'}" id="setShop" style="flex:1">Lista zakupów</button>
@@ -1009,7 +1010,7 @@ function settings() {
 
 function endSession() {
   const na = S.entries.filter(e => e.sessionId === S.cur && e.status === 'na').length, buy = S.entries.filter(e => e.sessionId === S.cur && e.status === 'buy').length;
-  modal(`<h3 style="margin:0;padding-right:36px">Zakończ zakupy</h3><p>Niedostępne: <b>${na}</b>, do kupienia: <b>${buy}</b>.</p>
+  modal(`<h3 style="margin:0;padding-right:52px">Zakończ zakupy</h3><p>Niedostępne: <b>${na}</b>, do kupienia: <b>${buy}</b>.</p>
   <label><input type="checkbox" id="cn" checked style="width:auto;min-height:0"> Przenieś niedostępne do nowej listy</label>
   <label><input type="checkbox" id="cb" checked style="width:auto;min-height:0"> Przenieś też „do kupienia”</label>
   <button class="btn" id="go">Zarchiwizuj i utwórz nową</button><button class="btn s" id="cl">Anuluj</button>`);
@@ -1028,7 +1029,7 @@ function endSession() {
 }
 
 function typesEditor() {
-  modal(`<h3 style="margin:0;padding-right:36px">Rodzaje list</h3>` + S.types.map(t => `<div class="item" style="margin:6px 0"><div class="t"><b>${ic(t.icon, 18)} ${esc(t.name)}</b><small>${t.categories.length} kategorii</small></div><button class="chip f" data-et="${t.id}">Edytuj</button></div>`).join('') +
+  modal(`<h3 style="margin:0;padding-right:52px">Rodzaje list</h3>` + S.types.map(t => `<div class="item" style="margin:6px 0"><div class="t"><b>${ic(t.icon, 18)} ${esc(t.name)}</b><small>${t.categories.length} kategorii</small></div><button class="chip f" data-et="${t.id}">Edytuj</button></div>`).join('') +
     `<button class="btn" id="nt">Nowy rodzaj listy</button><button class="btn s" id="cl">Wróć</button>`);
   const cl = $('#cl'); if (cl) cl.onclick = () => { vibrate(); settings(); }; 
   const nt = $('#nt'); if (nt) nt.onclick = () => { vibrate(); editType(null); }; 
@@ -1037,7 +1038,7 @@ function typesEditor() {
 
 function editType(id) {
   const t = id ? type(id) : { name: '', color: '#FFB5CC', icon: 'bag', food: false, categories: [] };
-  modal(`<h3 style="margin:0;padding-right:36px">${id ? 'Edytuj listę' : 'Nowa lista'}</h3><label>Nazwa</label><input id="tn" value="${esc(t.name)}"><div class="g2"><div><label>Ikona</label><select id="ti">${opts(ICON_KEYS.map(k => [k, ICONL[k]]), t.icon)}</select></div><div><label>Kolor</label><input id="tc" type="color" value="${t.color}"></div></div>
+  modal(`<h3 style="margin:0;padding-right:52px">${id ? 'Edytuj listę' : 'Nowa lista'}</h3><label>Nazwa</label><input id="tn" value="${esc(t.name)}"><div class="g2"><div><label>Ikona</label><select id="ti">${opts(ICON_KEYS.map(k => [k, ICONL[k]]), t.icon)}</select></div><div><label>Kolor</label><input id="tc" type="color" value="${t.color}"></div></div>
   <label><input type="checkbox" id="tf" ${t.food ? 'checked' : ''} style="width:auto;min-height:0"> Produkty spożywcze (wartości odżywcze)</label>
   <label>Kategorie (jedna w wierszu)</label><textarea id="tk" rows="8">${esc(t.categories.map(c => c.name).join('\n'))}</textarea><div class="err" id="err"></div>
   <button class="btn" id="ok">Zapisz</button>${id ? '<button class="btn d" id="del">Usuń listę</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
