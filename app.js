@@ -39,8 +39,8 @@ function mig(s) {
   return s; 
 }
 
-const UNITS = ['szt', 'opak.', 'g', 'kg', 'ml', 'l'], ST = ['buy', 'bought', 'na'], STL = { buy: 'Do kupienia', bought: 'Kupione', na: 'Niedostępne' }, STI = { buy: '', bought: ic('check', 20), na: ic('x', 18) };
-const MEALS = ['Śniadanie', 'Drugie śniadanie', 'Obiad', 'Kolacja', 'Przekąski'];
+const UNITS = ['szt', 'opak.', 'g', 'kg', 'ml', 'l', 'łyżka', 'łyżeczka'], ST = ['buy', 'bought', 'na'], STL = { buy: 'Do kupienia', bought: 'Kupione', na: 'Niedostępne' }, STI = { buy: '', bought: ic('check', 20), na: ic('x', 18) };
+const MEALS = ['Śniadanie', 'Drugie śniadanie', 'Obiad', 'Kolacja', 'Przekąski', 'Napoje'];
 const mk = (name, color, icon, food, cats) => ({ id: uid(), name, color, icon, food, categories: cats.map(n => ({ id: uid(), name: n })) });
 function seed() {
   const s = { v: 1, appMode: 'shopping', types: [
@@ -376,7 +376,7 @@ function showLogDetail(logId) {
       lg.items.map(it => {
         const ip = prod(it.productId);
         const ir = ip?.nutri ? Nutrition.calc(ip.nutri, it.qty, it.unit) : null;
-        return `<div style="display:flex;justify-content:space-between;background:var(--card);padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px">
+        return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--card);padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px">
           <span><b>${esc(ip?.name || 'Składnik')}</b> (${it.qty} ${it.unit})</span>
           <span style="font-weight:700;color:var(--vio)">${ir ? fmt(ir.kcal) + ' kcal' : '-'}</span>
         </div>`;
@@ -677,10 +677,14 @@ function trackerForm(logId) {
   const foodType = S.types.find(t => t.food) || S.types[0];
   let activeTab = lg?.items ? 'multi' : (lg?.customNutri ? 'custom' : 'single');
   let itemsList = lg?.items ? JSON.parse(JSON.stringify(lg.items)) : [];
+  let currentMeal = lg?.meal || MEALS[0];
+  let currentName = lg?.name || '';
+  let singleQty = lg?.qty || 100;
+  let singleUnit = lg?.unit || 'g';
 
   const drawForm = () => {
     modal(`<h3 style="margin:0;padding-right:36px">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
-    <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), lg?.meal || MEALS[0])}</select>
+    <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), currentMeal)}</select>
     
     <div style="display:flex;gap:4px;margin-top:10px;margin-bottom:12px;background:var(--line);padding:3px;border-radius:16px">
       <button class="chip f ${activeTab === 'single' ? 'on' : ''}" id="tabSingle" style="flex:1;justify-content:center">Z bazy</button>
@@ -692,15 +696,35 @@ function trackerForm(logId) {
     <div class="err" id="err"></div>
     <button class="btn" id="ok">Zapisz w dzienniku</button>${lg ? '<button class="btn s" id="rm">Usuń wpis</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
 
-    $('#tabSingle').onclick = () => { activeTab = 'single'; drawForm(); };
-    $('#tabMulti').onclick = () => { activeTab = 'multi'; drawForm(); };
-    $('#tabCustom').onclick = () => { activeTab = 'custom'; drawForm(); };
+    const mealSelect = $('#tMeal');
+    if (mealSelect) mealSelect.onchange = e => { currentMeal = e.target.value; };
+
+    $('#tabSingle').onclick = () => {
+      const tN = $('#tN'), tQ = $('#tQ'), tU = $('#tU');
+      if (tN) currentName = tN.value.trim();
+      if (tQ) singleQty = tQ.value;
+      if (tU) singleUnit = tU.value;
+      activeTab = 'single';
+      drawForm();
+    };
+    $('#tabMulti').onclick = () => {
+      const tName = $('#tName');
+      if (tName) currentName = tName.value.trim();
+      activeTab = 'multi';
+      drawForm();
+    };
+    $('#tabCustom').onclick = () => {
+      const cName = $('#cName');
+      if (cName) currentName = cName.value.trim();
+      activeTab = 'custom';
+      drawForm();
+    };
 
     const cnt = $('#tabContent');
     if (activeTab === 'single') {
       const p0 = lg?.productId ? prod(lg.productId) : null;
-      cnt.innerHTML = `<label>Nazwa produktu</label><input id="tN" value="${esc(p0?.name || lg?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div>
-      <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${lg?.qty || 100}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), lg?.unit || 'g')}</select></div></div>`;
+      cnt.innerHTML = `<label>Nazwa produktu</label><input id="tN" value="${esc(currentName || p0?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div>
+      <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${singleQty}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), singleUnit)}</select></div></div>`;
       
       let pid = p0 ? p0.id : null;
       const updateSug = () => {
@@ -712,25 +736,29 @@ function trackerForm(logId) {
       const tN = $('#tN');
       if (tN) {
         tN.oninput = e => {
-          const q = e.target.value.trim().toLowerCase();
+          currentName = e.target.value;
+          const q = currentName.trim().toLowerCase();
           if (!lg) pid = null;
           const sug = $('#sug');
           const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
           if (!q) updateSug();
           else if (sug) {
             sug.innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
-            sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); tN.value = pp.name; sug.innerHTML = ''; });
+            sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); tN.value = pp.name; currentName = pp.name; sug.innerHTML = ''; });
           }
         };
       }
       if (!lg) updateSug();
       cnt.dataset.getPid = () => pid;
     } else if (activeTab === 'multi') {
-      cnt.innerHTML = `<label>Nazwa posiłku (np. Koktajl proteinowy)</label><input id="tName" value="${esc(lg?.name || '')}" placeholder="np. Owsianka, Omlet">
+      cnt.innerHTML = `<label>Nazwa posiłku (np. Koktajl proteinowy)</label><input id="tName" value="${esc(currentName)}" placeholder="np. Owsianka, Omlet" autocomplete="off">
       <label>Dodane składniki:</label>
       <div id="itemsContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
       <button class="btn s" id="addItemBtn" style="min-height:40px;margin-top:4px">+ Dodaj składnik do posiłku</button>`;
       
+      const tNameInput = $('#tName');
+      if (tNameInput) tNameInput.oninput = e => { currentName = e.target.value; };
+
       const renderItems = () => {
         const icnt = $('#itemsContainer');
         if (!icnt) return;
@@ -738,21 +766,27 @@ function trackerForm(logId) {
           const p = prod(it.productId);
           return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:6px 10px;border-radius:12px;border:1.5px solid var(--line)">
             <span><b>${esc(p?.name || 'Produkt')}</b> (${it.qty} ${it.unit})</span>
-            <button class="ib del" data-del-item="${idx}" style="width:28px;height:28px">${ic('x', 16)}</button>
+            <div style="display:flex;gap:4px">
+              <button class="ib" data-edit-item="${idx}" style="width:28px;height:28px" aria-label="Edytuj">${ic('pencil', 14)}</button>
+              <button class="ib del" data-del-item="${idx}" style="width:28px;height:28px" aria-label="Usuń">${ic('x', 14)}</button>
+            </div>
           </div>`;
         }).join('');
         icnt.querySelectorAll('[data-del-item]').forEach(b => b.onclick = () => { itemsList.splice(+b.dataset.delItem, 1); renderItems(); });
+        icnt.querySelectorAll('[data-edit-item]').forEach(b => b.onclick = () => { openItemModal(+b.dataset.editItem); });
       };
       renderItems();
 
-      $('#addItemBtn').onclick = () => {
-        modal(`<h3 style="margin:0;padding-right:36px">Dodaj składnik</h3>
-        <label>Nazwa składnika</label><input id="itN" autocomplete="off"><div class="sug" id="itSug"></div>
-        <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="100"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), 'g')}</select></div></div>
+      const openItemModal = (editIdx = null) => {
+        const itToEdit = editIdx !== null ? itemsList[editIdx] : null;
+        const editP = itToEdit ? prod(itToEdit.productId) : null;
+        modal(`<h3 style="margin:0;padding-right:36px">${itToEdit ? 'Edytuj składnik' : 'Dodaj składnik'}</h3>
+        <label>Nazwa składnika</label><input id="itN" value="${esc(editP?.name || '')}" autocomplete="off"><div class="sug" id="itSug"></div>
+        <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="${itToEdit ? itToEdit.qty : 100}"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), itToEdit?.unit || 'g')}</select></div></div>
         <div class="err" id="itErr"></div>
-        <button class="btn" id="itOk">Dodaj składnik</button><button class="btn s" id="itCl">Anuluj</button>`);
+        <button class="btn" id="itOk">Zapisz składnik</button><button class="btn s" id="itCl">Anuluj</button>`);
         
-        let itPid = null;
+        let itPid = editP ? editP.id : null;
         const itN = $('#itN');
         const updateItSug = () => {
           const sug = $('#itSug'); if (!sug) return;
@@ -786,16 +820,26 @@ function trackerForm(logId) {
             p = { id: uid(), typeId: foodType.id, name: nm, catId: foodType.categories[0]?.id, nutri: f?.n || null };
             S.products.push(p);
           }
-          itemsList.push({ productId: p.id, qty: qv, unit: $('#itU')?.value || 'g' });
+          const newItemData = { productId: p.id, qty: qv, unit: $('#itU')?.value || 'g' };
+          if (editIdx !== null) {
+            itemsList[editIdx] = newItemData;
+          } else {
+            itemsList.push(newItemData);
+          }
           drawForm();
         };
       };
+
+      $('#addItemBtn').onclick = () => openItemModal(null);
     } else if (activeTab === 'custom') {
       const c = lg?.customNutri || {};
-      cnt.innerHTML = `<label>Nazwa (opcjonalnie)</label><input id="cName" value="${esc(lg?.name || '')}" placeholder="np. Obiad na mieście">
+      cnt.innerHTML = `<label>Nazwa (opcjonalnie)</label><input id="cName" value="${esc(currentName)}" placeholder="np. Obiad na mieście" autocomplete="off">
       <div class="g2"><div><label>Energia (kcal)</label><input id="cK" inputmode="decimal" placeholder="kcal" value="${c.kcal ?? ''}"></div><div><label>Białko (g)</label><input id="cP" inputmode="decimal" placeholder="g" value="${c.protein ?? ''}"></div></div>
       <div class="g2" style="margin-top:8px"><div><label>Tłuszcze (g)</label><input id="cT" inputmode="decimal" placeholder="g" value="${c.fat ?? ''}"></div><div><label>Węglowodany (g)</label><input id="cW" inputmode="decimal" placeholder="g" value="${c.carbs ?? ''}"></div></div>
       <div style="margin-top:8px"><label>Błonnik (g)</label><input id="cF" inputmode="decimal" placeholder="g" value="${c.fibre ?? ''}"></div>`;
+      
+      const cNameInput = $('#cName');
+      if (cNameInput) cNameInput.oninput = e => { currentName = e.target.value; };
     }
 
     const cl = $('#cl'); if (cl) cl.onclick = () => { vibrate(); modal(''); };
@@ -812,7 +856,7 @@ function trackerForm(logId) {
 
         if (activeTab === 'single') {
           const tN = $('#tN');
-          const name = tN ? tN.value.trim() : '';
+          const name = tN ? tN.value.trim() : currentName.trim();
           const tq = $('#tQ');
           const qty = tq ? num(tq.value) : 100;
           const err = $('#err');
@@ -834,12 +878,12 @@ function trackerForm(logId) {
           logData.unit = $('#tU')?.value || 'g';
           logData.name = name;
         } else if (activeTab === 'multi') {
-          const name = $('#tName')?.value.trim() || 'Posiłek złożony';
+          const name = currentName.trim() || 'Posiłek złożony';
           if (!itemsList.length) { const err = $('#err'); if (err) err.textContent = 'Dodaj przynajmniej jeden składnik.'; return; }
           logData.name = name;
           logData.items = itemsList;
         } else if (activeTab === 'custom') {
-          const name = $('#cName')?.value.trim() || 'Posiłek';
+          const name = currentName.trim() || 'Posiłek';
           const kcal = num($('#cK')?.value);
           if (!kcal) { const err = $('#err'); if (err) err.textContent = 'Podaj liczbę kalorii.'; return; }
           logData.name = name;
@@ -853,7 +897,7 @@ function trackerForm(logId) {
         }
 
         if (lg) {
-          delete lg.productId; delete lg.qty; delete lg.unit; delete lg.items; delete lg.customNutri;
+          delete lg.productId; delete lg.qty; delete lg.unit; delete lg.items; delete lg.customNutri; delete lg.name;
           Object.assign(lg, logData);
         } else {
           S.logs.push({ id: uid(), ...logData });
@@ -977,7 +1021,7 @@ function editType(id) {
   try { S = await DB.get(); if (!S) { S = seed(); await DB.put(S); } } catch { S = seed(); }
   mig(S); 
   appMode = S.appMode || 'shopping';
-  try { await DB.put(JSON.parse(JSON.stringify(S))); } catch {}
+  try { await DB.put(JSON.parse(JSON.stringify(S))) } catch {}
   if (navigator.storage?.persist) navigator.storage.persist(); 
   renderModeHeader();
   render();
