@@ -802,7 +802,7 @@ function trackerForm(logId) {
         <label>Nazwa składnika</label><input id="itN" value="${esc(editP?.name || itToEdit?.name || '')}" autocomplete="off"><div class="sug" id="itSug"></div>
         <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="${itToEdit ? itToEdit.qty : 100}"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), itToEdit?.unit || 'g')}</select></div></div>
         
-        <div style="margin-top:12px;background:var(--card);padding:10px;border-radius:12px;border:1px solid var(--line)">
+        <div style="margin-top:12px;background:var(--card);padding:10px;border-radius:12px;border:1.5px solid var(--line)">
           <label style="font-size:13px;margin-bottom:6px">Wartości odżywcze na 100g/100ml (jeśli brak w bazie):</label>
           <div class="g2"><div><label>Kcal</label><input id="icK" inputmode="decimal" value="${cn.kcal ?? ''}"></div><div><label>Białko (g)</label><input id="icP" inputmode="decimal" value="${cn.protein ?? ''}"></div></div>
           <div class="g2" style="margin-top:6px"><div><label>Tłuszcz (g)</label><input id="icT" inputmode="decimal" value="${cn.fat ?? ''}"></div><div><label>Węgle (g)</label><input id="icW" inputmode="decimal" value="${cn.carbs ?? ''}"></div></div>
@@ -894,9 +894,9 @@ function trackerForm(logId) {
     const cl = $('#cl'); if (cl) cl.onclick = () => { vibrate(); modal(''); };
     const rm = $('#rm'); if (lg && rm) rm.onclick = () => { vibrate(); removeEntry(lg.id); modal(''); };
 
-    const ok = $('#ok');
-    if (ok) {
-      ok.onclick = () => {
+    const okBtn = $('#ok');
+    if (okBtn) {
+      okBtn.onclick = () => {
         vibrate();
         const meal = $('#tMeal')?.value || MEALS[0];
         const num = v => { v = String(v || '').trim().replace(',', '.'); return v === '' || isNaN(+v) ? 0 : +v; };
