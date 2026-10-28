@@ -72,7 +72,7 @@ function modal(html) {
   const m = $('#modal'); 
   if (!m) return; 
   m.innerHTML = html ? `<div class="sheet" id="sh"><div style="position:relative">
-    <button class="ib" id="modalCloseX" style="position:absolute;top:0;right:0;width:36px;height:36px;border-radius:50%;background:var(--line);z-index:5" aria-label="Zamknij">${ic('x', 18)}</button>
+    <button class="ib" id="modalCloseX" style="position:absolute;top:0;right:0;width:36px;height:36px;z-index:5;background:transparent" aria-label="Zamknij">${ic('x', 20)}</button>
     <div>${html}</div>
   </div></div>` : ''; 
   
@@ -289,15 +289,26 @@ function calcLogNutri(l) {
   if (l.items && l.items.length) {
     const res = { kcal: 0, protein: 0, fat: 0, carbs: 0, fibre: 0 };
     l.items.forEach(it => {
-      const p = prod(it.productId);
-      if (p?.nutri) {
-        const c = Nutrition.calc(p.nutri, it.qty, it.unit);
+      if (it.customNutri) {
+        const c = Nutrition.calc(it.customNutri, it.qty, it.unit);
         if (c) {
           res.kcal += c.kcal || 0;
           res.protein += c.protein || 0;
           res.fat += c.fat || 0;
           res.carbs += c.carbs || 0;
           res.fibre += c.fibre || 0;
+        }
+      } else {
+        const p = prod(it.productId);
+        if (p?.nutri) {
+          const c = Nutrition.calc(p.nutri, it.qty, it.unit);
+          if (c) {
+            res.kcal += c.kcal || 0;
+            res.protein += c.protein || 0;
+            res.fat += c.fat || 0;
+            res.carbs += c.carbs || 0;
+            res.fibre += c.fibre || 0;
+          }
         }
       }
     });
@@ -374,11 +385,11 @@ function showLogDetail(logId) {
   if (lg.items && lg.items.length) {
     detailsHtml = `<label style="margin-top:14px">Składniki posiłku:</label><div style="display:flex;flex-direction:column;gap:4px">` +
       lg.items.map(it => {
-        const ip = prod(it.productId);
-        const ir = ip?.nutri ? Nutrition.calc(ip.nutri, it.qty, it.unit) : null;
+        const ip = it.productId ? prod(it.productId) : null;
+        const ir = it.customNutri ? Nutrition.calc(it.customNutri, it.qty, it.unit) : (ip?.nutri ? Nutrition.calc(ip.nutri, it.qty, it.unit) : null);
         return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--card);padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px">
-          <span><b>${esc(ip?.name || 'Składnik')}</b> (${it.qty} ${it.unit})</span>
-          <span style="font-weight:700;color:var(--vio)">${ir ? fmt(ir.kcal) + ' kcal' : '-'}</span>
+          <span><b>${esc(ip?.name || it.name || 'Składnik')}</b> (${it.qty} ${it.unit})</span>
+          <span style="font-weight:700;color:var(--vio)">${ir ? fmt(ir.kcal) + ' kcal' : '<span style="color:var(--err)">brak w bazie</span>'}</span>
         </div>`;
       }).join('') + `</div>`;
   }
@@ -722,7 +733,7 @@ function trackerForm(logId) {
 
     const cnt = $('#tabContent');
     if (activeTab === 'single') {
-      const p0 = lg?.productId ? prod(lg.productId) : null;
+      const p0 = lg?.productId ? prod(lg.productId) : (currentName ? S.products.find(x => col.compare(x.name, currentName) === 0) : null);
       cnt.innerHTML = `<label>Nazwa produktu</label><input id="tN" value="${esc(currentName || p0?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div>
       <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${singleQty}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), singleUnit)}</select></div></div>`;
       
@@ -731,14 +742,15 @@ function trackerForm(logId) {
         const sug = $('#sug'); if (!sug) return;
         const recents = S.products.filter(x => x.nutri).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
         sug.innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
-        sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); const tn = $('#tN'); if (tn) tn.value = pp.name; });
+        sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); const tn = $('#tN'); if (tn) { tn.value = pp.name; currentName = pp.name; } });
       };
       const tN = $('#tN');
       if (tN) {
         tN.oninput = e => {
           currentName = e.target.value;
           const q = currentName.trim().toLowerCase();
-          if (!lg) pid = null;
+          const found = S.products.find(x => col.compare(x.name, currentName.trim()) === 0);
+          pid = found ? found.id : null;
           const sug = $('#sug');
           const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
           if (!q) updateSug();
@@ -748,7 +760,7 @@ function trackerForm(logId) {
           }
         };
       }
-      if (!lg) updateSug();
+      if (!lg && !currentName) updateSug();
       cnt.dataset.getPid = () => pid;
     } else if (activeTab === 'multi') {
       cnt.innerHTML = `<label>Nazwa posiłku (np. Koktajl proteinowy)</label><input id="tName" value="${esc(currentName)}" placeholder="np. Owsianka, Omlet" autocomplete="off">
@@ -763,9 +775,13 @@ function trackerForm(logId) {
         const icnt = $('#itemsContainer');
         if (!icnt) return;
         icnt.innerHTML = itemsList.map((it, idx) => {
-          const p = prod(it.productId);
+          const p = it.productId ? prod(it.productId) : null;
+          const hasNutri = it.customNutri || (p && p.nutri);
           return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:6px 10px;border-radius:12px;border:1.5px solid var(--line)">
-            <span><b>${esc(p?.name || 'Produkt')}</b> (${it.qty} ${it.unit})</span>
+            <div>
+              <b>${esc(p?.name || it.name || 'Składnik')}</b> (${it.qty} ${it.unit})
+              ${!hasNutri ? '<br><small style="color:var(--err)">Brak w bazie — <a href="#" data-fix-item="' + idx + '" style="color:var(--vio);font-weight:700">uzupełnij makro</a></small>' : ''}
+            </div>
             <div style="display:flex;gap:4px">
               <button class="ib" data-edit-item="${idx}" style="width:28px;height:28px" aria-label="Edytuj">${ic('pencil', 14)}</button>
               <button class="ib del" data-del-item="${idx}" style="width:28px;height:28px" aria-label="Usuń">${ic('x', 14)}</button>
@@ -774,53 +790,86 @@ function trackerForm(logId) {
         }).join('');
         icnt.querySelectorAll('[data-del-item]').forEach(b => b.onclick = () => { itemsList.splice(+b.dataset.delItem, 1); renderItems(); });
         icnt.querySelectorAll('[data-edit-item]').forEach(b => b.onclick = () => { openItemModal(+b.dataset.editItem); });
+        icnt.querySelectorAll('[data-fix-item]').forEach(a => a.onclick = e => { e.preventDefault(); openItemModal(+a.dataset.fixItem); });
       };
       renderItems();
 
       const openItemModal = (editIdx = null) => {
         const itToEdit = editIdx !== null ? itemsList[editIdx] : null;
-        const editP = itToEdit ? prod(itToEdit.productId) : null;
+        const editP = itToEdit?.productId ? prod(itToEdit.productId) : null;
+        const cn = itToEdit?.customNutri || {};
         modal(`<h3 style="margin:0;padding-right:36px">${itToEdit ? 'Edytuj składnik' : 'Dodaj składnik'}</h3>
-        <label>Nazwa składnika</label><input id="itN" value="${esc(editP?.name || '')}" autocomplete="off"><div class="sug" id="itSug"></div>
+        <label>Nazwa składnika</label><input id="itN" value="${esc(editP?.name || itToEdit?.name || '')}" autocomplete="off"><div class="sug" id="itSug"></div>
         <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="${itToEdit ? itToEdit.qty : 100}"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), itToEdit?.unit || 'g')}</select></div></div>
+        
+        <div style="margin-top:12px;background:var(--card);padding:10px;border-radius:12px;border:1px solid var(--line)">
+          <label style="font-size:13px;margin-bottom:6px">Wartości odżywcze na 100g/100ml (jeśli brak w bazie):</label>
+          <div class="g2"><div><label>Kcal</label><input id="icK" inputmode="decimal" value="${cn.kcal ?? ''}"></div><div><label>Białko (g)</label><input id="icP" inputmode="decimal" value="${cn.protein ?? ''}"></div></div>
+          <div class="g2" style="margin-top:6px"><div><label>Tłuszcz (g)</label><input id="icT" inputmode="decimal" value="${cn.fat ?? ''}"></div><div><label>Węgle (g)</label><input id="icW" inputmode="decimal" value="${cn.carbs ?? ''}"></div></div>
+          <div style="margin-top:6px"><label>Błonnik (g)</label><input id="icF" inputmode="decimal" value="${cn.fibre ?? ''}"></div>
+        </div>
+
         <div class="err" id="itErr"></div>
         <button class="btn" id="itOk">Zapisz składnik</button><button class="btn s" id="itCl">Anuluj</button>`);
         
         let itPid = editP ? editP.id : null;
+        let itName = editP?.name || itToEdit?.name || '';
         const itN = $('#itN');
-        const updateItSug = () => {
-          const sug = $('#itSug'); if (!sug) return;
-          const recents = S.products.filter(x => x.nutri).slice(0, 6);
-          sug.innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
-          sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); if (itN) itN.value = pp.name; });
-        };
         if (itN) {
           itN.oninput = e => {
-            const q = e.target.value.trim().toLowerCase();
+            itName = e.target.value;
+            const q = itName.trim().toLowerCase();
+            const found = S.products.find(x => col.compare(x.name, itName.trim()) === 0);
+            itPid = found ? found.id : null;
             const sug = $('#itSug');
             const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
-            if (!q) updateItSug();
-            else if (sug) {
+            if (!q) {
+              sug.innerHTML = S.products.filter(x => x.nutri).slice(0, 6).map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+            } else if (sug) {
               sug.innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
-              sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); itN.value = pp.name; sug.innerHTML = ''; });
             }
+            sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); itN.value = pp.name; itName = pp.name; sug.innerHTML = ''; });
           };
         }
-        updateItSug();
+        const initialSug = $('#itSug');
+        if (initialSug) {
+          initialSug.innerHTML = S.products.filter(x => x.nutri).slice(0, 6).map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+          initialSug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); itN.value = pp.name; itName = pp.name; initialSug.innerHTML = ''; });
+        }
 
         $('#itCl').onclick = () => drawForm();
         $('#itOk').onclick = () => {
-          const nm = itN?.value.trim(), qv = +($('#itQ')?.value.replace(',', '.') || 0);
+          const nm = itName.trim(), qv = +($('#itQ')?.value.replace(',', '.') || 0);
           if (!nm) return $('#itErr').textContent = 'Podaj nazwę składnika.';
           if (!(qv > 0)) return $('#itErr').textContent = 'Ilość musi być większa od zera.';
-          let p = itPid && prod(itPid);
-          if (!p) p = S.products.find(x => col.compare(x.name, nm) === 0);
-          if (!p) {
-            const f = Foods.find(nm, foodType.categories.map(c => c.name));
-            p = { id: uid(), typeId: foodType.id, name: nm, catId: foodType.categories[0]?.id, nutri: f?.n || null };
-            S.products.push(p);
+          
+          let p = itPid ? prod(itPid) : S.products.find(x => col.compare(x.name, nm) === 0);
+          const num = v => { v = String(v || '').trim().replace(',', '.'); return v === '' || isNaN(+v) ? 0 : +v; };
+          const customKcal = num($('#icK')?.value);
+          
+          let customNutri = null;
+          if (customKcal > 0) {
+            customNutri = {
+              basis: 'g',
+              values: {
+                kcal: customKcal,
+                protein: num($('#icP')?.value),
+                fat: num($('#icT')?.value),
+                carbs: num($('#icW')?.value),
+                fibre: num($('#icF')?.value)
+              }
+            };
           }
-          const newItemData = { productId: p.id, qty: qv, unit: $('#itU')?.value || 'g' };
+
+          if (!p && !customNutri) {
+            const f = Foods.find(nm, foodType.categories.map(c => c.name));
+            if (f) {
+              p = { id: uid(), typeId: foodType.id, name: nm, catId: foodType.categories[0]?.id, nutri: f.n };
+              S.products.push(p);
+            }
+          }
+
+          const newItemData = { productId: p ? p.id : null, name: nm, qty: qv, unit: $('#itU')?.value || 'g', customNutri };
           if (editIdx !== null) {
             itemsList[editIdx] = newItemData;
           } else {
@@ -865,8 +914,7 @@ function trackerForm(logId) {
           
           let getPid = cnt.dataset.getPid;
           let pid = getPid ? getPid() : null;
-          let p = pid && prod(pid);
-          if (!p) p = S.products.find(x => col.compare(x.name, name) === 0);
+          let p = pid ? prod(pid) : S.products.find(x => col.compare(x.name, name) === 0);
           if (!p) {
             const f = Foods.find(name, foodType.categories.map(c => c.name));
             p = { id: uid(), typeId: foodType.id, name, catId: foodType.categories[0]?.id, nutri: f?.n || null };
