@@ -224,14 +224,39 @@ function renderShopping() {
     </div></div></div>`).join('')).join('');
 }
 
+function calcLogNutri(l) {
+  if (l.customNutri) {
+    return l.customNutri;
+  }
+  if (l.items && l.items.length) {
+    const res = { kcal: 0, protein: 0, fat: 0, carbs: 0, fibre: 0 };
+    l.items.forEach(it => {
+      const p = prod(it.productId);
+      if (p?.nutri) {
+        const c = Nutrition.calc(p.nutri, it.qty, it.unit);
+        if (c) {
+          res.kcal += c.kcal || 0;
+          res.protein += c.protein || 0;
+          res.fat += c.fat || 0;
+          res.carbs += c.carbs || 0;
+          res.fibre += c.fibre || 0;
+        }
+      }
+    });
+    return res;
+  }
+  const p = prod(l.productId);
+  return p?.nutri ? Nutrition.calc(p.nutri, l.qty, l.unit) : null;
+}
+
 function renderTracker() {
   const main = $('#main');
   if (!main) return;
 
   const dayLogs = S.logs.filter(l => l.date === logDate);
   const calculated = dayLogs.map(l => {
-    const p = prod(l.productId);
-    return { log: l, p, r: p?.nutri ? Nutrition.calc(p.nutri, l.qty, l.unit) : null };
+    const p = l.productId ? prod(l.productId) : null;
+    return { log: l, name: l.name || p?.name || 'Posiłek', p, r: calcLogNutri(l) };
   });
 
   const totals = { kcal: 0, protein: 0, fat: 0, carbs: 0, fibre: 0 };
@@ -265,9 +290,9 @@ function renderTracker() {
         const mealKcal = items.reduce((s, i) => s + (i.r?.kcal || 0), 0);
         html += `<h2><span class="pill" style="--c:#D4C1FF;--on:#2E2A47">${esc(meal)} · ${fmt(mealKcal)} kcal</span></h2>` +
           items.map(i => `<div class="item-wrapper"><div class="item" style="--c:#CDB9FF;min-height:46px;padding:4px 8px" data-item-id="${i.log.id}">
-            <div class="t" data-log-edit="${i.log.id}" style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div><b>${esc(i.p?.name || 'Produkt')}</b> <small>· ${esc(String(i.log.qty).replace('.', ','))} ${esc(i.log.unit)}</small></div>
-              <span class="nu" style="font-size:13px">${i.r ? fmt(i.r.kcal) + ' kcal' : ''}</span>
+            <div class="t" data-log-view="${i.log.id}" style="display:flex;align-items:center;justify-content:space-between;width:100%;cursor:pointer">
+              <div><b>${esc(i.name)}</b> <small>${i.log.items ? '· posiłek złożony (' + i.log.items.length + ' skł.)' : (i.log.qty ? '· ' + esc(String(i.log.qty).replace('.', ',')) + ' ' + esc(i.log.unit) : '')}</small></div>
+              <span class="nu" style="font-size:14px;font-weight:800;color:var(--vio)">${i.r ? fmt(i.r.kcal) + ' kcal' : '0 kcal'}</span>
             </div>
             <div class="acts">
               <button class="ib" style="width:32px;height:32px" data-log-edit="${i.log.id}" aria-label="Edytuj">${ic('pencil', 16)}</button>
@@ -278,6 +303,51 @@ function renderTracker() {
   }
 
   main.innerHTML = html;
+}
+
+function showLogDetail(logId) {
+  const lg = S.logs.find(l => l.id === logId);
+  if (!lg) return;
+  const p = lg.productId ? prod(lg.productId) : null;
+  const name = lg.name || p?.name || 'Posiłek';
+  const r = calcLogNutri(lg) || { kcal: 0, protein: 0, fat: 0, carbs: 0, fibre: 0 };
+
+  let detailsHtml = '';
+  if (lg.items && lg.items.length) {
+    detailsHtml = `<label style="margin-top:14px">Składniki posiłku:</label><div style="display:flex;flex-direction:column;gap:4px">` +
+      lg.items.map(it => {
+        const ip = prod(it.productId);
+        const ir = ip?.nutri ? Nutrition.calc(ip.nutri, it.qty, it.unit) : null;
+        return `<div style="display:flex;justify-content:space-between;background:var(--card);padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px">
+          <span><b>${esc(ip?.name || 'Składnik')}</b> (${it.qty} ${it.unit})</span>
+          <span style="font-weight:700;color:var(--vio)">${ir ? fmt(ir.kcal) + ' kcal' : '-'}</span>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  modal(`<h3 style="margin:0">${esc(name)}</h3>
+  <small style="color:var(--mut);font-weight:700">${esc(lg.meal)} · ${lg.date}</small>
+  
+  <div style="margin-top:16px;text-align:center;background:var(--card);padding:14px;border-radius:18px;border:1.5px solid var(--line)">
+    <div style="font-size:32px;font-weight:800;color:var(--vio)">${fmt(r.kcal)} <span style="font-size:18px;color:var(--ink)">kcal</span></div>
+  </div>
+
+  <div class="macro-grid" style="margin-top:12px">
+    <div class="macro-item">${fmt(r.protein)}g <span>Białko</span></div>
+    <div class="macro-item">${fmt(r.fat)}g <span>Tłuszcze</span></div>
+    <div class="macro-item">${fmt(r.carbs)}g <span>Węgle</span></div>
+    <div class="macro-item">${fmt(r.fibre)}g <span>Błonnik</span></div>
+  </div>
+
+  ${detailsHtml}
+
+  <div style="display:flex;gap:8px;margin-top:20px">
+    <button class="btn" id="editLogBtn" style="flex:1">Edytuj</button>
+    <button class="btn s" id="closeDetailBtn" style="flex:1">Zamknij</button>
+  </div>`);
+
+  $('#closeDetailBtn').onclick = () => { vibrate(); modal(''); };
+  $('#editLogBtn').onclick = () => { vibrate(); trackerForm(logId); };
 }
 
 function openFilterModal() {
@@ -355,6 +425,13 @@ document.addEventListener('click', e => {
   const modeBtn = e.target.closest('[data-mode]');
   if (modeBtn) {
     switchMode(modeBtn.dataset.mode);
+    return;
+  }
+
+  const logView = e.target.closest('[data-log-view]');
+  if (logView) {
+    vibrate();
+    showLogDetail(logView.dataset.logView);
     return;
   }
 
@@ -531,77 +608,198 @@ function entryForm(id) {
 }
 
 function trackerForm(logId) {
-  const lg = logId && S.logs.find(x => x.id === logId), p0 = lg && prod(lg.productId);
-  let pid = p0 ? p0.id : null, foodType = S.types.find(t => t.food) || S.types[0];
-  
-  modal(`<h3 style="margin:0">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
-  <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), lg?.meal || MEALS[0])}</select>
-  <label>Nazwa produktu</label><input id="tN" value="${esc(p0?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div><div class="err" id="err"></div>
-  <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${lg ? lg.qty : 100}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), lg?.unit || 'g')}</select></div></div>
-  <button class="btn" id="ok">Zapisz w dzienniku</button>${lg ? '<button class="btn s" id="rm">Usuń wpis</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
+  const lg = logId && S.logs.find(x => x.id === logId);
+  const foodType = S.types.find(t => t.food) || S.types[0];
+  let activeTab = lg?.items ? 'multi' : (lg?.customNutri ? 'custom' : 'single');
+  let itemsList = lg?.items ? JSON.parse(JSON.stringify(lg.items)) : [];
 
-  const num = v => { v = String(v).trim().replace(',', '.'); return v === '' || isNaN(+v) ? null : +v; };
+  const drawForm = () => {
+    modal(`<h3 style="margin:0">${lg ? 'Edytuj posiłek' : 'Zarejestruj posiłek'}</h3>
+    <label>Posiłek</label><select id="tMeal">${opts(MEALS.map(m => [m, m]), lg?.meal || MEALS[0])}</select>
+    
+    <div style="display:flex;gap:4px;margin-top:10px;margin-bottom:12px;background:var(--line);padding:3px;border-radius:16px">
+      <button class="chip f ${activeTab === 'single' ? 'on' : ''}" id="tabSingle" style="flex:1;justify-content:center">Z bazy</button>
+      <button class="chip f ${activeTab === 'multi' ? 'on' : ''}" id="tabMulti" style="flex:1;justify-content:center">Składniki</button>
+      <button class="chip f ${activeTab === 'custom' ? 'on' : ''}" id="tabCustom" style="flex:1;justify-content:center">Wpisz kcal</button>
+    </div>
 
-  const updateSug = () => {
-    const sug = $('#sug');
-    if (!sug) return;
-    const recents = S.products.filter(x => x.nutri).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
-    sug.innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
-    sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { 
-      vibrate(); pid = b.dataset.p; const pp = prod(pid); 
-      const tn = $('#tN'); if (tn) tn.value = pp.name;
-    });
+    <div id="tabContent"></div>
+    <div class="err" id="err"></div>
+    <button class="btn" id="ok">Zapisz w dzienniku</button>${lg ? '<button class="btn s" id="rm">Usuń wpis</button>' : ''}<button class="btn s" id="cl">Anuluj</button>`);
+
+    $('#tabSingle').onclick = () => { activeTab = 'single'; drawForm(); };
+    $('#tabMulti').onclick = () => { activeTab = 'multi'; drawForm(); };
+    $('#tabCustom').onclick = () => { activeTab = 'custom'; drawForm(); };
+
+    const cnt = $('#tabContent');
+    if (activeTab === 'single') {
+      const p0 = lg?.productId ? prod(lg.productId) : null;
+      cnt.innerHTML = `<label>Nazwa produktu</label><input id="tN" value="${esc(p0?.name || lg?.name || '')}" autocomplete="off"><div class="sug" id="sug"></div>
+      <div class="g2"><div><label>Ilość</label><input id="tQ" inputmode="decimal" value="${lg?.qty || 100}"></div><div><label>Jednostka</label><select id="tU">${opts(UNITS.map(u => [u, u]), lg?.unit || 'g')}</select></div></div>`;
+      
+      let pid = p0 ? p0.id : null;
+      const updateSug = () => {
+        const sug = $('#sug'); if (!sug) return;
+        const recents = S.products.filter(x => x.nutri).sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).slice(0, 6);
+        sug.innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+        sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); const tn = $('#tN'); if (tn) tn.value = pp.name; });
+      };
+      const tN = $('#tN');
+      if (tN) {
+        tN.oninput = e => {
+          const q = e.target.value.trim().toLowerCase();
+          if (!lg) pid = null;
+          const sug = $('#sug');
+          const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
+          if (!q) updateSug();
+          else if (sug) {
+            sug.innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
+            sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); tN.value = pp.name; sug.innerHTML = ''; });
+          }
+        };
+      }
+      if (!lg) updateSug();
+      cnt.dataset.getPid = () => pid;
+    } else if (activeTab === 'multi') {
+      cnt.innerHTML = `<label>Nazwa posiłku (np. Koktajl proteinowy)</label><input id="tName" value="${esc(lg?.name || '')}" placeholder="np. Owsianka, Omlet">
+      <label>Dodane składniki:</label>
+      <div id="itemsContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <button class="btn s" id="addItemBtn" style="min-height:40px;margin-top:4px">+ Dodaj składnik do posiłku</button>`;
+      
+      const renderItems = () => {
+        const icnt = $('#itemsContainer');
+        if (!icnt) return;
+        icnt.innerHTML = itemsList.map((it, idx) => {
+          const p = prod(it.productId);
+          return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:6px 10px;border-radius:12px;border:1.5px solid var(--line)">
+            <span><b>${esc(p?.name || 'Produkt')}</b> (${it.qty} ${it.unit})</span>
+            <button class="ib del" data-del-item="${idx}" style="width:28px;height:28px">${ic('x', 16)}</button>
+          </div>`;
+        }).join('');
+        icnt.querySelectorAll('[data-del-item]').forEach(b => b.onclick = () => { itemsList.splice(+b.dataset.delItem, 1); renderItems(); });
+      };
+      renderItems();
+
+      $('#addItemBtn').onclick = () => {
+        modal(`<h3 style="margin:0">Dodaj składnik</h3>
+        <label>Nazwa składnika</label><input id="itN" autocomplete="off"><div class="sug" id="itSug"></div>
+        <div class="g2"><div><label>Ilość</label><input id="itQ" inputmode="decimal" value="100"></div><div><label>Jednostka</label><select id="itU">${opts(UNITS.map(u => [u, u]), 'g')}</select></div></div>
+        <div class="err" id="itErr"></div>
+        <button class="btn" id="itOk">Dodaj składnik</button><button class="btn s" id="itCl">Anuluj</button>`);
+        
+        let itPid = null;
+        const itN = $('#itN');
+        const updateItSug = () => {
+          const sug = $('#itSug'); if (!sug) return;
+          const recents = S.products.filter(x => x.nutri).slice(0, 6);
+          sug.innerHTML = recents.map(x => `<button class="chip f" data-p="${x.id}">⭐ ${esc(x.name)}</button>`).join('');
+          sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); if (itN) itN.value = pp.name; });
+        };
+        if (itN) {
+          itN.oninput = e => {
+            const q = e.target.value.trim().toLowerCase();
+            const sug = $('#itSug');
+            const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
+            if (!q) updateItSug();
+            else if (sug) {
+              sug.innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
+              sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); itPid = b.dataset.p; const pp = prod(itPid); itN.value = pp.name; sug.innerHTML = ''; });
+            }
+          };
+        }
+        updateItSug();
+
+        $('#itCl').onclick = () => drawForm();
+        $('#itOk').onclick = () => {
+          const nm = itN?.value.trim(), qv = +($('#itQ')?.value.replace(',', '.') || 0);
+          if (!nm) return $('#itErr').textContent = 'Podaj nazwę składnika.';
+          if (!(qv > 0)) return $('#itErr').textContent = 'Ilość musi być większa od zera.';
+          let p = itPid && prod(itPid);
+          if (!p) p = S.products.find(x => col.compare(x.name, nm) === 0);
+          if (!p) {
+            const f = Foods.find(nm, foodType.categories.map(c => c.name));
+            p = { id: uid(), typeId: foodType.id, name: nm, catId: foodType.categories[0]?.id, nutri: f?.n || null };
+            S.products.push(p);
+          }
+          itemsList.push({ productId: p.id, qty: qv, unit: $('#itU')?.value || 'g' });
+          drawForm();
+        };
+      };
+    } else if (activeTab === 'custom') {
+      const c = lg?.customNutri || {};
+      cnt.innerHTML = `<label>Nazwa (opcjonalnie)</label><input id="cName" value="${esc(lg?.name || '')}" placeholder="np. Obiad na mieście">
+      <div class="g2"><div><label>Energia (kcal)</label><input id="cK" inputmode="decimal" placeholder="kcal" value="${c.kcal ?? ''}"></div><div><label>Białko (g)</label><input id="cP" inputmode="decimal" placeholder="g" value="${c.protein ?? ''}"></div></div>
+      <div class="g2" style="margin-top:8px"><div><label>Tłuszcze (g)</label><input id="cT" inputmode="decimal" placeholder="g" value="${c.fat ?? ''}"></div><div><label>Węglowodany (g)</label><input id="cW" inputmode="decimal" placeholder="g" value="${c.carbs ?? ''}"></div></div>
+      <div style="margin-top:8px"><label>Błonnik (g)</label><input id="cF" inputmode="decimal" placeholder="g" value="${c.fibre ?? ''}"></div>`;
+    }
+
+    const cl = $('#cl'); if (cl) cl.onclick = () => { vibrate(); modal(''); };
+    const rm = $('#rm'); if (lg && rm) rm.onclick = () => { vibrate(); removeEntry(lg.id); modal(''); };
+
+    const ok = $('#ok');
+    if (ok) {
+      ok.onclick = () => {
+        vibrate();
+        const meal = $('#tMeal')?.value || MEALS[0];
+        const num = v => { v = String(v || '').trim().replace(',', '.'); return v === '' || isNaN(+v) ? 0 : +v; };
+        
+        let logData = { date: logDate, meal };
+
+        if (activeTab === 'single') {
+          const tN = $('#tN');
+          const name = tN ? tN.value.trim() : '';
+          const tq = $('#tQ');
+          const qty = tq ? num(tq.value) : 100;
+          const err = $('#err');
+          if (!name) { if (err) err.textContent = 'Podaj nazwę produktu.'; return; }
+          if (!(qty > 0)) { if (err) err.textContent = 'Ilość musi być większa od zera.'; return; }
+          
+          let getPid = cnt.dataset.getPid;
+          let pid = getPid ? getPid() : null;
+          let p = pid && prod(pid);
+          if (!p) p = S.products.find(x => col.compare(x.name, name) === 0);
+          if (!p) {
+            const f = Foods.find(name, foodType.categories.map(c => c.name));
+            p = { id: uid(), typeId: foodType.id, name, catId: foodType.categories[0]?.id, nutri: f?.n || null };
+            S.products.push(p);
+          }
+          p.usedCount = (p.usedCount || 0) + 1;
+          logData.productId = p.id;
+          logData.qty = qty;
+          logData.unit = $('#tU')?.value || 'g';
+          logData.name = name;
+        } else if (activeTab === 'multi') {
+          const name = $('#tName')?.value.trim() || 'Posiłek złożony';
+          if (!itemsList.length) { const err = $('#err'); if (err) err.textContent = 'Dodaj przynajmniej jeden składnik.'; return; }
+          logData.name = name;
+          logData.items = itemsList;
+        } else if (activeTab === 'custom') {
+          const name = $('#cName')?.value.trim() || 'Posiłek';
+          const kcal = num($('#cK')?.value);
+          if (!kcal) { const err = $('#err'); if (err) err.textContent = 'Podaj liczbę kalorii.'; return; }
+          logData.name = name;
+          logData.customNutri = {
+            kcal,
+            protein: num($('#cP')?.value),
+            fat: num($('#cT')?.value),
+            carbs: num($('#cW')?.value),
+            fibre: num($('#cF')?.value)
+          };
+        }
+
+        if (lg) {
+          delete lg.productId; delete lg.qty; delete lg.unit; delete lg.items; delete lg.customNutri;
+          Object.assign(lg, logData);
+        } else {
+          S.logs.push({ id: uid(), ...logData });
+        }
+
+        modal(''); save();
+      };
+    }
   };
 
-  const tN = $('#tN');
-  if (tN) {
-    tN.oninput = e => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!lg) pid = null;
-      const sug = $('#sug');
-      const m = q ? S.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 6) : [];
-      if (!q) updateSug();
-      else if (sug) {
-        sug.innerHTML = m.map(x => `<button class="chip f" data-p="${x.id}">${esc(x.name)}</button>`).join('');
-        sug.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { vibrate(); pid = b.dataset.p; const pp = prod(pid); tN.value = pp.name; sug.innerHTML = ''; });
-      }
-    };
-  }
-
-  if (!lg) updateSug();
-
-  const cl = $('#cl'); if (cl) cl.onclick = () => { vibrate(); modal(''); };
-  const rm = $('#rm'); if (lg && rm) rm.onclick = () => { vibrate(); removeEntry(lg.id); modal(''); };
-
-  const ok = $('#ok');
-  if (ok) {
-    ok.onclick = () => {
-      vibrate();
-      const name = tN ? tN.value.trim() : '';
-      const tq = $('#tQ');
-      const qty = tq ? num(tq.value) : 100;
-      const err = $('#err');
-      if (!name) { if (err) err.textContent = 'Podaj nazwę produktu.'; return; }
-      if (!(qty > 0)) { if (err) err.textContent = 'Ilość musi być większa od zera.'; return; }
-      
-      let p = pid && prod(pid);
-      if (!p) p = S.products.find(x => col.compare(x.name, name) === 0);
-      if (!p) {
-        const f = Foods.find(name, foodType.categories.map(c => c.name));
-        p = { id: uid(), typeId: foodType.id, name, catId: foodType.categories[0]?.id, nutri: f?.n || null };
-        S.products.push(p);
-      }
-      p.usedCount = (p.usedCount || 0) + 1;
-
-      const tMeal = $('#tMeal');
-      const tU = $('#tU');
-      const logData = { date: logDate, meal: tMeal ? tMeal.value : MEALS[0], productId: p.id, qty, unit: tU ? tU.value : 'g' };
-      if (lg) Object.assign(lg, logData);
-      else S.logs.push({ id: uid(), ...logData });
-
-      modal(''); save();
-    };
-  }
+  drawForm();
 }
 
 function settings() {
